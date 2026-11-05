@@ -31,3 +31,7 @@ dl{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:14px}dt{co
 @media(max-width:650px){.crop-controls{grid-template-columns:1fr;gap:12px}}
 .crop-guide span{display:inline-block;margin:5px;padding:3px 7px;border-radius:4px;background:#f04438;color:white;font-size:11px;line-height:1.25;font-weight:700;white-space:nowrap}
 .crop-guide.is-full{border-color:#24a36a;background:transparent;box-shadow:none}
+
+.crop-preset{border:1px solid #dce3eb;border-radius:10px;padding:12px 16px;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.crop-preset legend{font-weight:700;padding:0 6px;color:#34475b}
+@media(max-width:650px){.crop-preset{grid-template-columns:1fr}}
