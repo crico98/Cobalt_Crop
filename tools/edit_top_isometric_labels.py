@@ -308,7 +308,7 @@ def safe_stem(relative_path: str) -> str:
 
 
 def split_groups(records, val_fraction, seed):
-    if not records:
+    if not records or val_fraction <= 0:
         return set()
     # Preserve subfolder/acquisition groups when source images are organized into folders.
     groups = {}
