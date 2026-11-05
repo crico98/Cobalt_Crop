@@ -386,7 +386,6 @@ def export_datasets(image_root, label_root, output_root, manifest, val_fraction=
             destination_label.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
         yaml = (
-            "path: .\n"
             "train: images/train\n"
             "val: images/val\n"
             "names:\n"
