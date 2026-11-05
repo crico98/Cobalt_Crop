@@ -19,8 +19,8 @@ ALLOWED = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
 
 # Combined request-size limit, configurable before starting Flask.
 # PowerShell: $env:CROPPER_MAX_UPLOAD_MB = "750"
-MAX_UPLOAD_MB = max(1, int(os.environ.get("CROPPER_MAX_UPLOAD_MB", "500")))
-MAX_FILES_PER_BATCH = max(1, int(os.environ.get("CROPPER_MAX_FILES", "50")))
+MAX_UPLOAD_MB = max(1, int(os.environ.get("CROPPER_MAX_UPLOAD_MB", "50000")))
+MAX_FILES_PER_BATCH = max(1, int(os.environ.get("CROPPER_MAX_FILES", "500")))
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
