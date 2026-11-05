@@ -18,3 +18,10 @@ button:hover,.download:hover{filter:brightness(1.08)}.secondary{background:#e8ed
 .empty{min-height:280px;display:grid;place-items:center;text-align:center;color:#758396;background:#f7f9fb;border:1px dashed #cbd4df;border-radius:8px;padding:20px}.empty.small{min-height:180px}
 dl{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:14px}dt{color:#687789}dd{margin:0;font-weight:600}.download{margin:8px 0 12px;background:#126b55}
 @media(max-width:850px){.shell,.shell.wide{margin:0;padding:20px;border-radius:0}.item-columns{grid-template-columns:1fr}.item-heading{display:block}.status{display:inline-block;margin-top:8px}.actions{display:grid}}
+
+/* Live visualization of the center region passed to the detection model. */
+.image-frame{position:relative;width:100%;overflow:hidden;border-radius:8px;background:#15191e;line-height:0}
+.image-frame .preview{display:block;width:100%;height:auto;max-height:440px;object-fit:contain;border-radius:8px}
+.crop-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:3px solid #f04438;background:rgba(240,68,56,.10);box-shadow:0 0 0 9999px rgba(10,15,22,.48);pointer-events:none;display:flex;align-items:flex-start;justify-content:center;min-width:0;min-height:0}
+.crop-guide span{display:inline-block;margin:5px;padding:3px 7px;border-radius:4px;background:#f04438;color:white;font-size:11px;line-height:1.25;font-weight:700;white-space:nowrap}
+.crop-guide.is-full{border-color:#24a36a;background:transparent;box-shadow:none}
