@@ -348,7 +348,10 @@ def export_datasets(image_root, label_root, output_root, manifest, val_fraction=
     if missing:
         print(f"Warning: {len(missing)} annotated source images are missing and will be skipped.")
     if not records:
-        raise RuntimeError("No saved images with a view assignment and at least one polygon to export.")
+        print("Nothing to export yet.")
+        print(f"Open the editor and save each annotated image with T (Top) or I (Isometric), then S (save).")
+        print(f"Annotation manifest: {manifest_path if 'manifest_path' in locals() else MANIFEST_PATH}")
+        return
 
     for view in ("top", "isometric"):
         view_records = [r for r in records if r["view"] == view]
