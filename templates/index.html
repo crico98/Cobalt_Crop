@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cutter Face Cropper</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><main class="shell">
+<h1>Cutter Face Cropper</h1>
+<p class="sub">Upload a group of cutter photos, manually correct any orientations, then crop and center the entire batch.</p>
+{% if not model_available %}<p class="notice bad">Model checkpoint not found. Confirm the models/ path.</p>{% endif %}
+{% if error %}<p class="notice bad">{{ error }}</p>{% endif %}
+<form class="upload" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+<label for="images">Choose cutter photos</label>
+<input id="images" name="images" type="file" accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,image/*" multiple required>
+<p id="selection" class="muted">No images selected.</p>
+<button type="submit">Upload image batch</button></form>
+<p class="muted">Supported: JPG, PNG, WEBP, BMP, TIFF. Combined upload limit: {{ max_upload_mb }} MB. Maximum {{ max_files }} images per batch.</p>
+<p class="muted">Change the combined upload limit with the CROPPER_MAX_UPLOAD_MB environment variable. Orientation is never corrected automatically.</p>
+</main>
+<script>
+const input=document.getElementById('images'),selection=document.getElementById('selection');
+input.addEventListener('change',()=>{const files=Array.from(input.files||[]),total=files.reduce((s,f)=>s+f.size,0);
+selection.textContent=files.length?`${files.length} image(s) selected · ${(total/1048576).toFixed(1)} MB combined`:'No images selected.';});
+</script></body></html>

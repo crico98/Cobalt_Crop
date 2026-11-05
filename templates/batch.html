@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cutter Face Cropper — Batch Review</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><main class="shell wide">
+<a href="{{ url_for('index') }}" class="back">← Upload another batch</a>
+<h1>Batch review</h1><p class="sub">Rotate each image as needed, then run Auto Crop / Center Batch. Each photo is processed independently.</p>
+<div class="summary"><span><strong>{{ total }}</strong> uploaded</span><span><strong>{{ completed }}</strong> cropped</span><span><strong>{{ failed }}</strong> need attention</span></div>
+<form method="post" action="{{ url_for('autocrop_batch', batch_id=batch_id) }}" class="batch-action"><button class="primary" type="submit">Auto Crop / Center Batch ({{ total }} images)</button></form>
+{% if completed %}<p><a class="download" href="{{ url_for('download_batch', batch_id=batch_id) }}">Download all successful crops (.zip)</a></p>{% endif %}
+<section class="batch-grid">{% for item in items %}
+<article class="item-card"><div class="item-heading"><h2>{{ loop.index }}. {{ item.filename }}</h2>
+{% if item.crop %}<span class="status success">Cropped</span>{% elif item.error %}<span class="status failure">Needs attention</span>{% else %}<span class="status pending">Not processed</span>{% endif %}</div>
+<div class="item-columns"><div><h3>Working image</h3>
+<img class="preview" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
+<div class="actions">
+<form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='left') }}"><button class="secondary">↶ Rotate left</button></form>
+<form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='right') }}"><button class="secondary">↷ Rotate right</button></form>
+</div><p class="muted">Manual rotation: {{ item.rotation }}°</p></div>
+<div><h3>Centered crop</h3>{% if item.crop %}
+<img class="preview crop" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='crop') }}?v={{ item.rotation }}" alt="Centered crop">
+<dl><dt>Confidence</dt><dd>{{ item.face.confidence }}</dd><dt>Face center (px)</dt><dd>{{ item.face.center }}</dd><dt>Estimated radius (px)</dt><dd>{{ item.face.radius }}</dd><dt>Geometry reconstructed</dt><dd>{{ "Yes" if item.face.reconstructed else "No" }}</dd></dl>
+{% if item.face.review %}<p class="notice warn">Review recommended. Check this crop visually.</p>{% else %}<p class="notice good">No model review flags raised. Still verify visually.</p>{% endif %}
+<a class="download" href="{{ url_for('download_one', batch_id=batch_id, job_id=item.id) }}">Download this crop</a>
+{% elif item.error %}<p class="notice bad">{{ item.error }}</p>{% else %}<div class="empty small">Crop will appear here after batch processing.</div>{% endif %}</div></div></article>
+{% endfor %}</section>
+<p class="muted">Square crops use the V2 model's 87.5% face-coverage target and pad beyond image edges. Images are processed sequentially on the CPU. Manual rotation is preserved; no automatic EXIF rotation or deskew is applied.</p>
+</main></body></html>
