@@ -222,7 +222,7 @@ def autocrop_batch(batch_id):
             orientation_name = "landscape" if is_landscape else "portrait"
 
             print(
-                f"\\n[Face detector] {item['filename']} | "
+                f"\n[Face detector] {item['filename']} | "
                 f"working image={image.width}x{image.height} ({orientation_name}) | "
                 f"region={region_width}%W x {region_height}%H",
                 flush=True,
