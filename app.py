@@ -19,8 +19,8 @@ ALLOWED = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
 
 # Combined request-size limit, configurable before starting Flask.
 # PowerShell: $env:CROPPER_MAX_UPLOAD_MB = "750"
-MAX_UPLOAD_MB = max(1, int(os.environ.get("CROPPER_MAX_UPLOAD_MB", "500000")))
-MAX_FILES_PER_BATCH = max(1, int(os.environ.get("CROPPER_MAX_FILES", "500")))
+MAX_UPLOAD_MB = max(1, int(os.environ.get("CROPPER_MAX_UPLOAD_MB", "500")))
+MAX_FILES_PER_BATCH = max(1, int(os.environ.get("CROPPER_MAX_FILES", "50")))
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
@@ -169,6 +169,7 @@ def batch_view(batch_id):
         "batch.html", batch_id=batch_id, items=items,
         completed=completed, failed=failed,
         total=len(items),
+        crop_region=batch.get("crop_region", "65"),
     )
 
 
@@ -193,15 +194,47 @@ def rotate(batch_id, job_id, direction):
 @app.post("/autocrop/<batch_id>")
 def autocrop_batch(batch_id):
     batch = require_batch(batch_id)
+    requested_region = request.form.get("crop_region", "65")
+    region_fractions = {"full": 1.0, "50": 0.50, "65": 0.65, "80": 0.80}
+    if requested_region not in region_fractions:
+        abort(400, "Choose full image, 50%, 65%, or 80% center crop.")
+    batch["crop_region"] = requested_region
+    fraction = region_fractions[requested_region]
+
     for job_id in batch["items"]:
         item = jobs[job_id]
         item["crop"], item["face"], item["error"] = False, None, None
         try:
             image = load_rgb(item_dir(batch_id, job_id) / "working.png")
-            face = finder.find(image)
+
+            # The center crop is a fraction of both original dimensions.
+            # Run the existing model on that region, then translate its
+            # detected center back into original-image coordinates.
+            if fraction < 1.0:
+                crop_width = max(1, int(round(image.width * fraction)))
+                crop_height = max(1, int(round(image.height * fraction)))
+                offset_x = (image.width - crop_width) // 2
+                offset_y = (image.height - crop_height) // 2
+                model_image = image.crop((
+                    offset_x, offset_y,
+                    offset_x + crop_width, offset_y + crop_height,
+                ))
+            else:
+                offset_x = offset_y = 0
+                model_image = image
+
+            face = finder.find(model_image)
             if face is None:
-                item["error"] = "No cutter face detected. Check orientation or image clarity."
+                item["error"] = (
+                    f"No cutter face detected using the {requested_region}% "
+                    "center region. Try another region size or the full image."
+                    if requested_region != "full"
+                    else "No cutter face detected. Check orientation or image clarity."
+                )
                 continue
+
+            face["cx"] = float(face["cx"]) + offset_x
+            face["cy"] = float(face["cy"]) + offset_y
             crop, box = padded_square_crop(image, face)
             save_rgb(crop, item_dir(batch_id, job_id) / "crop.png")
             item["crop"] = True
@@ -212,6 +245,7 @@ def autocrop_batch(batch_id):
                 "reconstructed": bool(face.get("geometry_reconstructed")),
                 "review": bool(face.get("geometry_needs_review") or face.get("low_conf") or face.get("not_very_circular")),
                 "box": box,
+                "region": requested_region,
             }
         except Exception as exc:
             item["error"] = f"Processing error: {type(exc).__name__}: {exc}"
