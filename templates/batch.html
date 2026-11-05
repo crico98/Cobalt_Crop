@@ -14,14 +14,16 @@
 
 <form method="post" action="{{ url_for('autocrop_batch', batch_id=batch_id) }}" class="batch-action">
   <div class="crop-controls">
-    <div class="crop-control">
-      <label for="crop_width">Detection region width: <strong><output id="crop_width_value">{{ crop_region_width }}%</output></strong></label>
-      <input id="crop_width" name="crop_region_width" type="range" min="25" max="100" step="1" value="{{ crop_region_width }}">
-    </div>
-    <div class="crop-control">
-      <label for="crop_height">Detection region height: <strong><output id="crop_height_value">{{ crop_region_height }}%</output></strong></label>
-      <input id="crop_height" name="crop_region_height" type="range" min="25" max="100" step="1" value="{{ crop_region_height }}">
-    </div>
+    <fieldset class="crop-preset">
+      <legend>Landscape working image (width ≥ height)</legend>
+      <div class="crop-control"><label for="landscape_width">Detection width: <output id="landscape_width_value">{{ landscape_width }}%</output></label><input id="landscape_width" name="landscape_width" type="range" min="25" max="100" step="1" value="{{ landscape_width }}"></div>
+      <div class="crop-control"><label for="landscape_height">Detection height: <output id="landscape_height_value">{{ landscape_height }}%</output></label><input id="landscape_height" name="landscape_height" type="range" min="25" max="100" step="1" value="{{ landscape_height }}"></div>
+    </fieldset>
+    <fieldset class="crop-preset">
+      <legend>Portrait working image (height > width)</legend>
+      <div class="crop-control"><label for="portrait_width">Detection width: <output id="portrait_width_value">{{ portrait_width }}%</output></label><input id="portrait_width" name="portrait_width" type="range" min="25" max="100" step="1" value="{{ portrait_width }}"></div>
+      <div class="crop-control"><label for="portrait_height">Detection height: <output id="portrait_height_value">{{ portrait_height }}%</output></label><input id="portrait_height" name="portrait_height" type="range" min="25" max="100" step="1" value="{{ portrait_height }}"></div>
+    </fieldset>
   </div>
   <p class="muted">The red rectangle shows exactly which centered region the Face model will receive. Width and height can be adjusted independently. The final square crop is still taken from the full, manually oriented image.</p>
   <button class="primary" type="submit">Auto Crop / Center Batch ({{ total }} images)</button>
@@ -77,21 +79,27 @@
 </main>
 <script>
 (() => {
-  const widthInput = document.getElementById("crop_width");
-  const heightInput = document.getElementById("crop_height");
-  if (!widthInput || !heightInput) return;
+  const fields = ["landscape_width", "landscape_height", "portrait_width", "portrait_height"];
   const updateGuides = () => {
-    const width = Number(widthInput.value);
-    const height = Number(heightInput.value);
-    document.getElementById("crop_width_value").textContent = width + "%";
-    document.getElementById("crop_height_value").textContent = height + "%";
-    document.querySelectorAll("[data-crop-guide]").forEach((guide) => {
+    fields.forEach((id) => {
+      const input = document.getElementById(id);
+      const output = document.getElementById(id + "_value");
+      if (input && output) output.textContent = input.value + "%";
+    });
+    document.querySelectorAll(".image-frame").forEach((frame) => {
+      const image = frame.querySelector(".working-preview");
+      const guide = frame.querySelector("[data-crop-guide]");
+      if (!image || !guide || !image.naturalWidth || !image.naturalHeight) return;
+      const landscape = image.naturalWidth >= image.naturalHeight;
+      const width = Number(document.getElementById(landscape ? "landscape_width" : "portrait_width").value);
+      const height = Number(document.getElementById(landscape ? "landscape_height" : "portrait_height").value);
       guide.style.width = width + "%";
       guide.style.height = height + "%";
     });
   };
-  widthInput.addEventListener("input", updateGuides);
-  heightInput.addEventListener("input", updateGuides);
+  fields.forEach((id) => document.getElementById(id).addEventListener("input", updateGuides));
+  document.querySelectorAll(".working-preview").forEach((image) => image.addEventListener("load", updateGuides));
+  window.addEventListener("resize", updateGuides);
   updateGuides();
 })();
 </script>
