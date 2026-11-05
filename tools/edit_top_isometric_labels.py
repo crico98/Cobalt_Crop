@@ -199,7 +199,7 @@ def edit_one(image_path, image_root, label_root, manifest, manifest_path, number
     if image is None:
         print(f"Warning: could not read {image_path}; skipping.")
         return "next"
-    label_path = label_root / f"{image_path.stem}.txt"
+    label_path = label_root / image_path.relative_to(image_root).with_suffix(".txt")
     source_polygons = load_polygons(label_path)
     record = manifest["annotations"].get(key, {})
     saved = record.get("polygons")
@@ -255,11 +255,11 @@ def edit_one(image_path, image_root, label_root, manifest, manifest_path, number
                 if editor.current:
                     editor.current.pop()
                 elif editor.saved_polygons:
-                    editor.saved_polygons[-1] = editor.initial_polygons[-1].copy() if (
-                        len(editor.saved_polygons) < len(editor.initial_polygons)
-                    ) else editor.saved_polygons[-1]
-                    if len(editor.saved_polygons) > len(editor.initial_polygons):
+                    last = editor.saved_polygons[-1]
+                    if len(last) <= 3:
                         editor.saved_polygons.pop()
+                    else:
+                        editor.saved_polygons[-1] = np.delete(last, -1, axis=0)
             elif keycode in (ord("c"), ord("C")):
                 editor.saved_polygons = []
                 editor.current = []
@@ -352,6 +352,10 @@ def export_datasets(image_root, label_root, output_root, manifest, val_fraction=
 
     for view in ("top", "isometric"):
         view_records = [r for r in records if r["view"] == view]
+        # Rebuild only this dedicated view's generated dataset to avoid stale labels.
+        for generated in (output_root / view / "images", output_root / view / "labels"):
+            if generated.exists():
+                shutil.rmtree(generated)
         val_groups = split_groups(view_records, val_fraction, seed)
         for record in view_records:
             parent = Path(record["key"]).parent.as_posix()
@@ -382,7 +386,7 @@ def export_datasets(image_root, label_root, output_root, manifest, val_fraction=
             destination_label.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
         yaml = (
-            f"path: {view}\n"
+            "path: .\n"
             "train: images/train\n"
             "val: images/val\n"
             "names:\n"
