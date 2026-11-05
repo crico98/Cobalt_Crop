@@ -19,7 +19,10 @@
 <article class="item-card"><div class="item-heading"><h2>{{ loop.index }}. {{ item.filename }}</h2>
 {% if item.crop %}<span class="status success">Cropped</span>{% elif item.error %}<span class="status failure">Needs attention</span>{% else %}<span class="status pending">Not processed</span>{% endif %}</div>
 <div class="item-columns"><div><h3>Working image</h3>
-<img class="preview" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
+<div class="image-frame">
+<img class="preview working-preview" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
+<div class="crop-guide" data-crop-guide aria-hidden="true"><span>Model sees this area</span></div>
+</div>
 <div class="actions">
 <form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='left') }}"><button class="secondary">↶ Rotate left</button></form>
 <form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='right') }}"><button class="secondary">↷ Rotate right</button></form>
@@ -32,4 +35,21 @@
 {% elif item.error %}<p class="notice bad">{{ item.error }}</p>{% else %}<div class="empty small">Crop will appear here after batch processing.</div>{% endif %}</div></div></article>
 {% endfor %}</section>
 <p class="muted">Square crops use the V2 model's 87.5% face-coverage target and pad beyond image edges. Images are processed sequentially on the CPU. Manual rotation is preserved; no automatic EXIF rotation or deskew is applied.</p>
-</main></body></html>
+<script>
+(() => {
+  const selector = document.getElementById("crop_region");
+  if (!selector) return;
+  const updateGuides = () => {
+    const value = selector.value;
+    const fraction = value === "full" ? 1 : Number(value) / 100;
+    document.querySelectorAll("[data-crop-guide]").forEach((guide) => {
+      guide.style.width = (fraction * 100) + "%";
+      guide.style.height = (fraction * 100) + "%";
+      guide.classList.toggle("is-full", fraction === 1);
+      guide.querySelector("span").hidden = fraction === 1;
+    });
+  };
+  selector.addEventListener("change", updateGuides);
+  updateGuides();
+})();
+</script></main></body></html>
