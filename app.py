@@ -169,8 +169,10 @@ def batch_view(batch_id):
         "batch.html", batch_id=batch_id, items=items,
         completed=completed, failed=failed,
         total=len(items),
-        crop_region_width=batch.get("crop_region_width", 55),
-        crop_region_height=batch.get("crop_region_height", 80),
+        landscape_width=batch.get("landscape_width", 40),
+        landscape_height=batch.get("landscape_height", 70),
+        portrait_width=batch.get("portrait_width", 80),
+        portrait_height=batch.get("portrait_height", 55),
     )
 
 
@@ -196,20 +198,35 @@ def rotate(batch_id, job_id, direction):
 def autocrop_batch(batch_id):
     batch = require_batch(batch_id)
     try:
-        region_width = int(request.form.get("crop_region_width", "55"))
-        region_height = int(request.form.get("crop_region_height", "80"))
+        settings = {
+            "landscape_width": int(request.form.get("landscape_width", "40")),
+            "landscape_height": int(request.form.get("landscape_height", "70")),
+            "portrait_width": int(request.form.get("portrait_width", "80")),
+            "portrait_height": int(request.form.get("portrait_height", "55")),
+        }
     except (TypeError, ValueError):
-        abort(400, "Crop width and height must be whole-number percentages.")
-    if not (25 <= region_width <= 100 and 25 <= region_height <= 100):
-        abort(400, "Crop width and height must each be between 25% and 100%.")
-    batch["crop_region_width"] = region_width
-    batch["crop_region_height"] = region_height
+        abort(400, "All detection-region settings must be whole-number percentages.")
+    if any(value < 25 or value > 100 for value in settings.values()):
+        abort(400, "Detection-region settings must each be between 25% and 100%.")
+    batch.update(settings)
 
     for job_id in batch["items"]:
         item = jobs[job_id]
         item["crop"], item["face"], item["error"] = False, None, None
         try:
             image = load_rgb(item_dir(batch_id, job_id) / "working.png")
+            # Choose settings from the actual saved working image after manual rotation.
+            is_landscape = image.width >= image.height
+            region_width = settings["landscape_width" if is_landscape else "portrait_width"]
+            region_height = settings["landscape_height" if is_landscape else "portrait_height"]
+            orientation_name = "landscape" if is_landscape else "portrait"
+
+            print(
+                f"\\n[Face detector] {item['filename']} | "
+                f"working image={image.width}x{image.height} ({orientation_name}) | "
+                f"region={region_width}%W x {region_height}%H",
+                flush=True,
+            )
 
             # Width and height are independent percentages of the original.
             # Run the model only on this centered rectangle, then translate
@@ -227,11 +244,18 @@ def autocrop_batch(batch_id):
             if face is None:
                 item["error"] = (
                     f"No cutter face detected in the centered {region_width}% "
-                    f"width × {region_height}% height region. Try adjusting the "
-                    "region or adding representative training images."
+                    f"width × {region_height}% height region ({orientation_name}). "
+                    "Try adjusting the region or adding representative training images."
                 )
+                print(f"[Face detector] NO DETECTION: {item['filename']}", flush=True)
                 continue
 
+            print(
+                f"[Face detector] DETECTED {item['filename']} | "
+                f"confidence={float(face.get('conf', 0)):.3f} | "
+                f"center-in-region=({float(face['cx']):.1f}, {float(face['cy']):.1f})",
+                flush=True,
+            )
             face["cx"] = float(face["cx"]) + offset_x
             face["cy"] = float(face["cy"]) + offset_y
             crop, box = padded_square_crop(image, face)
@@ -248,7 +272,10 @@ def autocrop_batch(batch_id):
                 "region_height": region_height,
             }
         except Exception as exc:
+            import traceback
             item["error"] = f"Processing error: {type(exc).__name__}: {exc}"
+            print(f"[Face detector] ERROR on {item['filename']}: {exc}", flush=True)
+            traceback.print_exc()
     return redirect(url_for("batch_view", batch_id=batch_id))
 
 
