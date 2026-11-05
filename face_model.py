@@ -10,6 +10,10 @@ ROOT = Path(__file__).parent
 # Use V2 explicitly as the face-segmentation baseline. Do not silently fall
 # back to V3: the V2/V3 comparison needs to be intentional and reproducible.
 MODEL_PATH = ROOT / "models" / "face_combined_v2_finetune" / "weights" / "best.pt"
+# Also support the earlier standalone layout used by some local copies.
+LEGACY_MODEL_PATH = ROOT / "models" / "best.pt"
+if not MODEL_PATH.exists() and LEGACY_MODEL_PATH.exists():
+    MODEL_PATH = LEGACY_MODEL_PATH
 
 FACE_FRACTION = 0.875
 
