@@ -169,7 +169,8 @@ def batch_view(batch_id):
         "batch.html", batch_id=batch_id, items=items,
         completed=completed, failed=failed,
         total=len(items),
-        crop_region=batch.get("crop_region", "65"),
+        crop_region_width=batch.get("crop_region_width", 55),
+        crop_region_height=batch.get("crop_region_height", 80),
     )
 
 
@@ -194,12 +195,15 @@ def rotate(batch_id, job_id, direction):
 @app.post("/autocrop/<batch_id>")
 def autocrop_batch(batch_id):
     batch = require_batch(batch_id)
-    requested_region = request.form.get("crop_region", "65")
-    region_fractions = {"full": 1.0, "50": 0.50, "65": 0.65, "80": 0.80}
-    if requested_region not in region_fractions:
-        abort(400, "Choose full image, 50%, 65%, or 80% center crop.")
-    batch["crop_region"] = requested_region
-    fraction = region_fractions[requested_region]
+    try:
+        region_width = int(request.form.get("crop_region_width", "55"))
+        region_height = int(request.form.get("crop_region_height", "80"))
+    except (TypeError, ValueError):
+        abort(400, "Crop width and height must be whole-number percentages.")
+    if not (25 <= region_width <= 100 and 25 <= region_height <= 100):
+        abort(400, "Crop width and height must each be between 25% and 100%.")
+    batch["crop_region_width"] = region_width
+    batch["crop_region_height"] = region_height
 
     for job_id in batch["items"]:
         item = jobs[job_id]
@@ -207,29 +211,24 @@ def autocrop_batch(batch_id):
         try:
             image = load_rgb(item_dir(batch_id, job_id) / "working.png")
 
-            # The center crop is a fraction of both original dimensions.
-            # Run the existing model on that region, then translate its
-            # detected center back into original-image coordinates.
-            if fraction < 1.0:
-                crop_width = max(1, int(round(image.width * fraction)))
-                crop_height = max(1, int(round(image.height * fraction)))
-                offset_x = (image.width - crop_width) // 2
-                offset_y = (image.height - crop_height) // 2
-                model_image = image.crop((
-                    offset_x, offset_y,
-                    offset_x + crop_width, offset_y + crop_height,
-                ))
-            else:
-                offset_x = offset_y = 0
-                model_image = image
+            # Width and height are independent percentages of the original.
+            # Run the model only on this centered rectangle, then translate
+            # its detection coordinates back to the full working image.
+            crop_width = max(1, int(round(image.width * region_width / 100.0)))
+            crop_height = max(1, int(round(image.height * region_height / 100.0)))
+            offset_x = (image.width - crop_width) // 2
+            offset_y = (image.height - crop_height) // 2
+            model_image = image.crop((
+                offset_x, offset_y,
+                offset_x + crop_width, offset_y + crop_height,
+            ))
 
             face = finder.find(model_image)
             if face is None:
                 item["error"] = (
-                    f"No cutter face detected using the {requested_region}% "
-                    "center region. Try another region size or the full image."
-                    if requested_region != "full"
-                    else "No cutter face detected. Check orientation or image clarity."
+                    f"No cutter face detected in the centered {region_width}% "
+                    f"width × {region_height}% height region. Try adjusting the "
+                    "region or adding representative training images."
                 )
                 continue
 
@@ -245,7 +244,8 @@ def autocrop_batch(batch_id):
                 "reconstructed": bool(face.get("geometry_reconstructed")),
                 "review": bool(face.get("geometry_needs_review") or face.get("low_conf") or face.get("not_very_circular")),
                 "box": box,
-                "region": requested_region,
+                "region_width": region_width,
+                "region_height": region_height,
             }
         except Exception as exc:
             item["error"] = f"Processing error: {type(exc).__name__}: {exc}"
