@@ -1,37 +1,80 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport"<form method="post" action="{{ url_for('autocrop_batch', batch_id=batch_id) }}" class="batch-action">
-<div class="crop-controls">
-<div class="crop-control">
-<label for="crop_width">Detection region width: <strong><output id="crop_width_value">{{ crop_region_width }}%</output></strong></label>
-<input id="crop_width" name="crop_region_width" type="range" min="25" max="100" step="1" value="{{ crop_region_width }}">
-</div>
-<div class="crop-control">
-<label for="crop_height">Detection region height: <strong><output id="crop_height_value">{{ crop_region_height }}%</output></strong></label>
-<input id="crop_height" name="crop_region_height" type="range" min="25" max="100" step="1" value="{{ crop_region_height }}">
-</div>
-</div>
-<p class="muted">The red rectangle shows exactly which centered region the Face model will receive. Width and height can be adjusted independently. The final square crop is still taken from the full, manually oriented image.</p>
-<button class="primary" type="submit">Auto Crop / Center Batch ({{ total }} images)</button></form>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cutter Face Cropper — Batch</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="shell wide">
+<a class="back" href="{{ url_for('index') }}">← Upload another batch</a>
+<h1>Cutter Face Cropper</h1>
+<p class="sub">Review each working image, adjust the centered detection region, rotate manually if needed, and process the batch.</p>
+
+<form method="post" action="{{ url_for('autocrop_batch', batch_id=batch_id) }}" class="batch-action">
+  <div class="crop-controls">
+    <div class="crop-control">
+      <label for="crop_width">Detection region width: <strong><output id="crop_width_value">{{ crop_region_width }}%</output></strong></label>
+      <input id="crop_width" name="crop_region_width" type="range" min="25" max="100" step="1" value="{{ crop_region_width }}">
+    </div>
+    <div class="crop-control">
+      <label for="crop_height">Detection region height: <strong><output id="crop_height_value">{{ crop_region_height }}%</output></strong></label>
+      <input id="crop_height" name="crop_region_height" type="range" min="25" max="100" step="1" value="{{ crop_region_height }}">
+    </div>
+  </div>
+  <p class="muted">The red rectangle shows exactly which centered region the Face model will receive. Width and height can be adjusted independently. The final square crop is still taken from the full, manually oriented image.</p>
+  <button class="primary" type="submit">Auto Crop / Center Batch ({{ total }} images)</button>
+</form>
+
 {% if completed %}<p><a class="download" href="{{ url_for('download_batch', batch_id=batch_id) }}">Download all successful crops (.zip)</a></p>{% endif %}
-<section class="batch-grid">{% for item in items %}
-<article class="item-card"><div class="item-heading"><h2>{{ loop.index }}. {{ item.filename }}</h2>
-{% if item.crop %}<span class="status success">Cropped</span>{% elif item.error %}<span class="status failure">Needs attention</span>{% else %}<span class="status pending">Not processed</span>{% endif %}</div>
-<div class="item-columns"><div><h3>Working image</h3>
-<div class="image-frame">
-<img class="preview working-preview" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
-<div class="crop-guide" data-crop-guide aria-hidden="true"><span>Model sees this area</span></div>
-</div>
-<div class="actions">
-<form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='left') }}"><button class="secondary">↶ Rotate left</button></form>
-<form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='right') }}"><button class="secondary">↷ Rotate right</button></form>
-</div><p class="muted">Manual rotation: {{ item.rotation }}°</p></div>
-<div><h3>Centered crop</h3>{% if item.crop %}
-<img class="preview crop" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='crop') }}?v={{ item.rotation }}" alt="Centered crop">
-<dl><dt>Detection region</dt><dd>{{ item.face.region_width }}% width × {{ item.face.region_height }}% height</dd><dt>Confidence</dt><dd>{{ item.face.confidence }}</dd><dt>Face center (px)</dt><dd>{{ item.face.center }}</dd><dt>Estimated radius (px)</dt><dd>{{ item.face.radius }}</dd><dt>Geometry reconstructed</dt><dd>{{ "Yes" if item.face.reconstructed else "No" }}</dd></dl>
-{% if item.face.review %}<p class="notice warn">Review recommended. Check this crop visually.</p>{% else %}<p class="notice good">No model review flags raised. Still verify visually.</p>{% endif %}
-<a class="download" href="{{ url_for('download_one', batch_id=batch_id, job_id=item.id) }}">Download this crop</a>
-{% elif item.error %}<p class="notice bad">{{ item.error }}</p>{% else %}<div class="empty small">Crop will appear here after batch processing.</div>{% endif %}</div></div></article>
-{% endfor %}</section>
+
+<section class="batch-grid">
+{% for item in items %}
+<article class="item-card">
+  <div class="item-heading">
+    <h2>{{ loop.index }}. {{ item.filename }}</h2>
+    {% if item.crop %}<span class="status success">Cropped</span>{% elif item.error %}<span class="status failure">Needs attention</span>{% else %}<span class="status pending">Not processed</span>{% endif %}
+  </div>
+  <div class="item-columns">
+    <div>
+      <h3>Working image</h3>
+      <div class="image-frame">
+        <img class="preview working-preview" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
+        <div class="crop-guide" data-crop-guide aria-hidden="true"><span>Model sees this area</span></div>
+      </div>
+      <div class="actions">
+        <form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='left') }}"><button class="secondary">↶ Rotate left</button></form>
+        <form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='right') }}"><button class="secondary">↷ Rotate right</button></form>
+      </div>
+      <p class="muted">Manual rotation: {{ item.rotation }}°</p>
+    </div>
+    <div>
+      <h3>Centered crop</h3>
+      {% if item.crop %}
+        <img class="preview crop" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='crop') }}?v={{ item.rotation }}" alt="Centered crop">
+        <dl>
+          <dt>Detection region</dt><dd>{{ item.face.region_width }}% width × {{ item.face.region_height }}% height</dd>
+          <dt>Confidence</dt><dd>{{ item.face.confidence }}</dd>
+          <dt>Face center (px)</dt><dd>{{ item.face.center }}</dd>
+          <dt>Estimated radius (px)</dt><dd>{{ item.face.radius }}</dd>
+          <dt>Geometry reconstructed</dt><dd>{{ "Yes" if item.face.reconstructed else "No" }}</dd>
+        </dl>
+        {% if item.face.review %}<p class="notice warn">Review recommended. Check this crop visually.</p>{% else %}<p class="notice good">No model review flags raised. Still verify visually.</p>{% endif %}
+        <a class="download" href="{{ url_for('download_one', batch_id=batch_id, job_id=item.id) }}">Download this crop</a>
+      {% elif item.error %}
+        <p class="notice bad">{{ item.error }}</p>
+      {% else %}
+        <div class="empty small">Crop will appear here after batch processing.</div>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{% endfor %}
+</section>
+
 <p class="muted">Square crops use the V2 model's 87.5% face-coverage target and pad beyond image edges. Images are processed sequentially on the CPU. Manual rotation is preserved; no automatic EXIF rotation or deskew is applied.</p>
+</main>
 <script>
 (() => {
   const widthInput = document.getElementById("crop_width");
@@ -51,4 +94,6 @@
   heightInput.addEventListener("input", updateGuides);
   updateGuides();
 })();
-</script></main></body></html>
+</script>
+</body>
+</html>
