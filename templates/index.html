@@ -1,16 +1,21 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cutter Face Cropper</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<title>View-specific Cutter Cropper</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
 <body><main class="shell">
-<h1>Cutter Face Cropper</h1>
-<p class="sub">Upload cutter photos. EXIF orientation is corrected automatically; make any remaining manual corrections before cropping.</p>
-{% if not model_available %}<p class="notice bad">Model checkpoint not found. Confirm the models/ path.</p>{% endif %}
+<h1>View-specific Cutter Cropper</h1>
+<p class="sub">Upload cutter photos. Filename angle IDs route images to Isometric, Top, or Face; EXIF orientation is corrected automatically.</p>
+<ul class="muted">
+<li>Face V2 segmentation: {{ "ready" if model_available else "checkpoint missing" }}</li>
+<li>Top detector: {{ "ready" if top_model_available else "checkpoint missing" }}</li>
+<li>Isometric detector: {{ "ready" if isometric_model_available else "checkpoint missing" }}</li>
+</ul>
+{% if not model_available or not top_model_available or not isometric_model_available %}<p class="notice warn">One or more model checkpoints are not present locally. That view will report a processing error until its trained best.pt checkpoint is restored under models/.</p>{% endif %}
 {% if error %}<p class="notice bad">{{ error }}</p>{% endif %}
 <form class="upload" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
-<label for="images">Choose cutter photos</label>
+<label for="images">Choose cutter photos (filenames must contain angle_0, angle_1, or angle_2)</label>
 <input id="images" name="images" type="file" accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,image/*" multiple required>
 <p id="selection" class="muted">No images selected.</p>
-<button type="submit">Upload image batch</button></form>
+<button type="submit">Upload and group by angle</button></form>
 <p class="muted">Supported: JPG, PNG, WEBP, BMP, TIFF. Combined upload limit: {{ max_upload_mb }} MB. Maximum {{ max_files }} images per batch.</p>
 <p class="muted">Change the combined upload limit with the CROPPER_MAX_UPLOAD_MB environment variable. EXIF orientation is normalized automatically during upload; use manual rotation only for any remaining correction.</p>
 <p><a class="download" href="{{ url_for('top_isometric.editor') }}">Open Top / Isometric Annotation Editor</a></p>
