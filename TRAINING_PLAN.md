@@ -49,7 +49,7 @@ The detection box is a locator, not itself the final image crop.
 - **Top output:** square, fixed-resolution presentation image; the entire cutter must remain visible, centered, and surrounded by consistent margins. Never clip the carbide body.
 - **Isometric output:** square, fixed-resolution presentation image; center the diamond-table target and expand the crop enough that the table occupies a large, consistent portion of the frame while retaining some carbide context.
 - Normalize Top and Isometric independently. Do not force the apparent diamond-table scale in Isometric to match the full-cutter scale in Top.
-- Preserve the source orientation and aspect ratio. Use padding when a square crop extends beyond the source image rather than stretching the cutter.
+- Preserve the EXIF-corrected source orientation and aspect ratio. Use padding when a square crop extends beyond the source image rather than stretching the cutter.
 - Keep crop expansion/coverage settings explicit and shared between training validation and inference. Do not choose arbitrary final margins until representative predictions have been reviewed.
 
 ## Dataset structure
