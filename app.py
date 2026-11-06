@@ -11,6 +11,7 @@ from PIL import Image
 from werkzeug.utils import secure_filename
 
 from face_model import FaceFinder
+from top_isometric_web import top_isometric
 
 ROOT = Path(__file__).resolve().parent
 WORK = ROOT / "work"
@@ -25,6 +26,7 @@ MAX_FILES_PER_BATCH = max(1, int(os.environ.get("CROPPER_MAX_FILES", "500")))
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 finder = FaceFinder()
+app.register_blueprint(top_isometric)
 
 # Local single-user prototype: metadata is held in memory until Flask restarts.
 batches: dict[str, dict] = {}
