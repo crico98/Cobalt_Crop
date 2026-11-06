@@ -227,15 +227,30 @@ def upload():
 def batch_view(batch_id):
     batch = require_batch(batch_id)
     items = [jobs[job_id] for job_id in batch["items"]]
+    landscape_width = batch.get("landscape_width", 55)
+    landscape_height = batch.get("landscape_height", 80)
+    portrait_width = batch.get("portrait_width", 60)
+    portrait_height = batch.get("portrait_height", 45)
+    for item in items:
+        image = load_rgb(item_dir(batch_id, item["id"]) / "working.png")
+        is_landscape = image.width >= image.height
+        if item["view"] == "face":
+            base_width = landscape_width if is_landscape else portrait_width
+            base_height = landscape_height if is_landscape else portrait_height
+            item["preview_region_width"], item["preview_region_height"] = adjusted_detection_region(
+                base_width, base_height, bool(item["rotation"] % 360)
+            )
+        else:
+            item["preview_region_width"], item["preview_region_height"] = detection_region(
+                item["view"], image
+            )
     completed = sum(bool(item["crop"]) for item in items)
     failed = sum(bool(item["error"]) for item in items)
     return render_template(
         "batch.html", batch_id=batch_id, items=items,
         completed=completed, failed=failed, total=len(items),
-        landscape_width=batch.get("landscape_width", 55),
-        landscape_height=batch.get("landscape_height", 80),
-        portrait_width=batch.get("portrait_width", 60),
-        portrait_height=batch.get("portrait_height", 45),
+        landscape_width=landscape_width, landscape_height=landscape_height,
+        portrait_width=portrait_width, portrait_height=portrait_height,
     )
 
 
