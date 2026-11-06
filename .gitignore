@@ -12,5 +12,4 @@ training_presentation_exif_normalized/
 models/top_view/
 models/isometric_view/
 yolo11n.pt
-.dataset/training_rotation_manifest.json
 .vscode/
