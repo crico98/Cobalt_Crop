@@ -91,11 +91,13 @@ Training entry point: `python -m tools.train_top_isometric --view all`. Defaults
 1. Re-annotate Top images using the complete-cutter target; the exporter deliberately excludes legacy Top boxes.
 2. Review existing Isometric diamond-face boxes to confirm they tightly represent the visible diamond table; redraw only inconsistent examples.
 3. Review samples from each view for consistent target boundaries before exporting.
-4. Export separate datasets and audit every image/label pair, normalized box, class ID, and train/validation split.
-5. Train Top and Isometric independently using documented pretrained YOLO detection checkpoints. Record model version, dataset revision, image size, epochs, and metrics.
-6. Evaluate held-out images visually, measuring missed detections, false positives, box tightness, and final presentation crop consistency.
-7. Implement deterministic view-specific crop expansion/normalization only after reviewing predictions on representative images.
-8. Only after evaluation, wire each checkpoint into the cropper behind the explicit view supplied by the workflow.
+4. Export separate baseline datasets and audit every image/label pair, normalized box, class ID, and train/validation split.
+5. Complete the per-image post-EXIF rotation manifest, then build the separate EXIF-normalized dataset with the agreed derived-box expansions. Do not infer manual rotation from EXIF.
+6. Visually review the derived images and labels, including rotated examples and boxes constrained by image edges.
+7. Train Top and Isometric independently using the documented pretrained YOLO detection checkpoint. Record model version, dataset revision, image size, epochs, and metrics.
+8. Evaluate held-out images visually, measuring missed detections, false positives, box tightness, and final presentation crop consistency.
+9. Implement deterministic view-specific crop expansion/normalization only after reviewing predictions on representative images.
+10. Only after evaluation, wire each checkpoint into the cropper behind the explicit view supplied by the workflow.
 
 ## Scope boundaries
 
