@@ -17,6 +17,24 @@ Validate the production crop-processing behavior in Cropper StandAlone before im
 - Keep the batch's source paths and angle metadata attached to each processing item so outputs can be traced back to their source records.
 - StandAlone's current direct-upload interface may remain a testing harness, but it must exercise the same angle-to-view mapping and group-processing order as production. Do not introduce a separate manual view-selection workflow.
 
+## Implementation status on this branch
+
+The following pipeline components are implemented:
+
+- Filename angle resolver for exactly one delimited `angle_0`, `angle_1`, or `angle_2` token.
+- Strict rejection of missing, unsupported, and ambiguous identifiers.
+- Stable Isometric → Top → Face grouping, preserving upload order within each group.
+- Direct-upload harness uses the same filename resolver and routing rules. A small adapter accepts synthetic JSON record arrays containing the known `file_path` field for contract tests; the real BitHub manifest envelope is not available in this project and is not guessed.
+- Independent lazy-loaded Top and Isometric YOLO detectors, plus the unchanged Face V2 path.
+- Six view/orientation detection-region settings, centered region extraction, and translation of detector boxes back to full working-image coordinates.
+- Square Top/Isometric output geometry, fixed 1200-pixel output, aspect-ratio preservation, and edge padding.
+- Batch preview labels the view, angle, model input region, detector confidence, and provisional crop framing.
+- Unit tests cover routing, stable ordering, invalid inputs, all six region settings, coordinate mapping, square crop geometry, and detection selection.
+
+The Top and Isometric model directories are excluded by `.gitignore`; their locally trained `best.pt` files must be present on the workstation for inference. The application reports missing checkpoints and does not substitute another view's model.
+
+**Crop framing is not yet production-approved.** Current preview defaults are Top target coverage 0.80 and Isometric target coverage 0.65. These are deliberately marked provisional in the UI and code. They must be visually reviewed and adjusted against representative real crops before the merge gate can pass.
+
 ## Existing model baseline
 
 - Face inference uses the existing segmentation checkpoint through `FaceFinder`.
