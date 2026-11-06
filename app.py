@@ -186,8 +186,8 @@ def batch_view(batch_id):
         total=len(items),
         landscape_width=batch.get("landscape_width", 55),
         landscape_height=batch.get("landscape_height", 80),
-        portrait_width=batch.get("portrait_width", 80),
-        portrait_height=batch.get("portrait_height", 55),
+        portrait_width=batch.get("portrait_width", 60),
+        portrait_height=batch.get("portrait_height", 45),
     )
 
 
@@ -216,8 +216,8 @@ def autocrop_batch(batch_id):
         settings = {
             "landscape_width": int(request.form.get("landscape_width", "55")),
             "landscape_height": int(request.form.get("landscape_height", "80")),
-            "portrait_width": int(request.form.get("portrait_width", "80")),
-            "portrait_height": int(request.form.get("portrait_height", "55")),
+            "portrait_width": int(request.form.get("portrait_width", "60")),
+            "portrait_height": int(request.form.get("portrait_height", "45")),
         }
     except (TypeError, ValueError):
         abort(400, "All detection-region settings must be whole-number percentages.")
