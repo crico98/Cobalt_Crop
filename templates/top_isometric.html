@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Top / Isometric Annotation</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main class="shell wide annotation-shell">
+  <a class="back" href="{{ url_for('index') }}">← Back to Cutter Face Cropper</a>
+  <h1>Top / Isometric Diamond Face Annotation</h1>
+  <p class="sub">Drag on the image to box each visible diamond face. Exclude the carbide body and pocket. Assign the image view, then save.</p>
+
+  <div class="annotation-toolbar">
+    <div class="annotation-nav">
+      <button id="previous" class="secondary" type="button">← Previous</button>
+      <span id="position" class="muted">Loading images…</span>
+      <button id="next" type="button">Next →</button>
+    </div>
+    <div class="annotation-views" role="group" aria-label="Image view">
+      <button id="view-top" class="secondary" type="button">Top</button>
+      <button id="view-isometric" class="secondary" type="button">Isometric</button>
+    </div>
+  </div>
+
+  <div class="annotation-layout">
+    <section class="annotation-image-panel">
+      <div id="image-stage" class="annotation-stage">
+        <div id="empty-state" class="empty">Loading the image set…</div>
+        <img id="source-image" alt="Cutter image for annotation" hidden>
+        <canvas id="box-canvas" hidden></canvas>
+      </div>
+      <p id="image-name" class="muted annotation-filename"></p>
+      <p class="muted">Drag to create a box. Drag inside an existing box to move it. Select a box and use Delete to remove only that box.</p>
+    </section>
+
+    <aside class="annotation-sidebar">
+      <div class="annotation-card">
+        <h2>Current image</h2>
+        <p id="view-status" class="annotation-status">View not assigned</p>
+        <p><strong id="box-count">0</strong> diamond-face box(es)</p>
+        <div class="annotation-actions">
+          <button id="delete-box" class="secondary" type="button" disabled>Delete selected box</button>
+          <button id="clear-boxes" class="secondary" type="button">Clear all boxes</button>
+          <button id="save" class="primary" type="button">Save annotation</button>
+        </div>
+        <p id="save-status" class="muted" aria-live="polite">Changes are not saved until you click Save or navigate.</p>
+      </div>
+      <div class="annotation-card">
+        <h2>Dataset export</h2>
+        <p class="muted">Exports the saved manifest into separate Top and Isometric YOLO datasets. It does not change the source images or annotations.</p>
+        <button id="export" type="button">Export YOLO datasets</button>
+        <p id="export-status" class="muted" aria-live="polite"></p>
+      </div>
+      <div class="annotation-card">
+        <h2>Guidance</h2>
+        <ul class="annotation-guidance">
+          <li>Box the visible diamond face tightly.</li>
+          <li>Do not include carbide body or pocket.</li>
+          <li>Multiple visible faces can be boxed in one image.</li>
+          <li>Wear, chips, and spalling are acceptable if the face is locatable.</li>
+          <li>Skip faces that are broken, obscured, or too unclear to locate.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</main>
+<script src="{{ url_for('static', filename='top_isometric.js') }}" defer></script>
+</body>
+</html>
