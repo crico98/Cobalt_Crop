@@ -3,7 +3,7 @@
 <title>View-specific Cutter Cropper</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
 <body><main class="shell">
 <h1>View-specific Cutter Cropper</h1>
-<p class="sub">Upload cutter photos. Filename angle IDs route images to Isometric, Top, or Face; EXIF orientation is corrected automatically.</p>
+<p class="sub">Upload cutter photos with a JSON manifest that explicitly assigns each photo an angle_index. EXIF orientation is corrected automatically.</p>
 <ul class="muted">
 <li>Face V2 segmentation: {{ "ready" if model_available else "checkpoint missing" }}</li>
 <li>Top detector: {{ "ready" if top_model_available else "checkpoint missing" }}</li>
@@ -12,10 +12,13 @@
 {% if not model_available or not top_model_available or not isometric_model_available %}<p class="notice warn">One or more model checkpoints are not present locally. That view will report a processing error until its trained best.pt checkpoint is restored under models/.</p>{% endif %}
 {% if error %}<p class="notice bad">{{ error }}</p>{% endif %}
 <form class="upload" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
-<label for="images">Choose cutter photos (filenames must contain angle_0, angle_1, or angle_2)</label>
+<label for="images">Choose cutter photos</label>
 <input id="images" name="images" type="file" accept=".jpg,.jpeg,.png,.webp,.bmp,.tif,.tiff,image/*" multiple required>
+<label for="manifest">Choose the JSON manifest (photo filename + angle_index)</label>
+<input id="manifest" name="manifest" type="file" accept=".json,application/json" required>
+<p class="muted">Manifest mapping: angle_index 0 = Isometric, 1 = Top, 2 = Face. Each record must contain file_path and angle_index. The filename is used only to match the photo.</p>
 <p id="selection" class="muted">No images selected.</p>
-<button type="submit">Upload and group by angle</button></form>
+<button type="submit">Upload and group by angle_index</button></form>
 <p class="muted">Supported: JPG, PNG, WEBP, BMP, TIFF. Combined upload limit: {{ max_upload_mb }} MB. Maximum {{ max_files }} images per batch.</p>
 <p class="muted">Change the combined upload limit with the CROPPER_MAX_UPLOAD_MB environment variable. EXIF orientation is normalized automatically during upload; use manual rotation only for any remaining correction.</p>
 <p><a class="download" href="{{ url_for('top_isometric.editor') }}">Open Top / Isometric Annotation Editor</a></p>
