@@ -13,7 +13,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_IMAGE_DIR = ROOT / "dataset" / "train" / "images"
-DEFAULT_OUTPUT_DIR = ROOT / "training"
+DEFAULT_OUTPUT_DIR = ROOT / "training_presentation"
 MANIFEST_PATH = ROOT / "dataset" / "top_isometric_annotations.json"
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 OUTPUT_FACE_CLASS_ID = 0
