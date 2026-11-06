@@ -108,11 +108,14 @@ class GeometryTests(unittest.TestCase):
             square_crop_geometry((100, 100), (5, 5, 20, 20), 0)
 
     def test_highest_confidence_box_selected(self):
-        boxes = SimpleNamespace(
-            xyxy=SimpleNamespace(tolist=lambda: [[1, 2, 10, 20], [5, 6, 30, 40]]),
-            conf=[SimpleNamespace(item=lambda: 0.4), SimpleNamespace(item=lambda: 0.9)],
-        )
-        result = SimpleNamespace(boxes=boxes)
+        class FakeBoxes:
+            xyxy = SimpleNamespace(tolist=lambda: [[1, 2, 10, 20], [5, 6, 30, 40]])
+            conf = [SimpleNamespace(item=lambda: 0.4), SimpleNamespace(item=lambda: 0.9)]
+
+            def __len__(self):
+                return 2
+
+        result = SimpleNamespace(boxes=FakeBoxes())
         self.assertEqual(
             choose_detection(result),
             {"box": (5.0, 6.0, 30.0, 40.0), "confidence": 0.9},
