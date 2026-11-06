@@ -1,8 +1,13 @@
-# Top and Isometric diamond-face detector development
+# Top and Isometric cutter detection and presentation crop development
 
 ## Objective
 
-Train two independent object-detection models to locate the **visible diamond face** in their assigned view. The model does not classify view type and does not need to trace the cutter body or produce a precise segmentation mask. Its bounding box is used as the region of interest for the downstream crop.
+Train two independent object-detection models for different presentation requirements:
+
+- **Top:** locate the complete visible cutter, including the full carbide body and diamond table. Its predicted box is the reference for a normalized crop that retains the entire cutter.
+- **Isometric:** locate the visible diamond table. Its predicted box is the reference for a normalized crop in which the diamond table occupies a large portion of the image while retaining enough carbide to preserve the isometric context.
+
+These are intentionally different targets. Do not use one shared annotation definition for both views.
 
 ## Model layout
 
@@ -11,19 +16,41 @@ Keep the existing production Face-view model and its inference/cropping logic un
 - `models/top_view/weights/best.pt`
 - `models/isometric_view/weights/best.pt`
 
-The application or upstream image organization supplies the view assignment. Do not train a view classifier or infer Top/Isometric from image orientation.
+The workflow supplies the view assignment. Do not train a view classifier or infer Top/Isometric from image orientation.
 
-Each detector has one object-detection class:
+Each detector has one class:
 
-- Class 0: `diamond_face`
+- Top class 0: `full_cutter`
+- Isometric class 0: `diamond_table`
 
-The target box should tightly enclose the visible diamond material/face. Exclude the surrounding carbide body, pocket, and unrelated material. The annotation is a crop locator, not a measurement of the exact diamond boundary.
+## Annotation rules
 
-## Annotation inclusion rules
+### Top
 
-Include intact, worn, chipped, or spalled cutters when the visible diamond face can still be located reliably. Exclude broken, obscured, blurry, or incomplete examples when the diamond face cannot be identified with confidence. Do not label an uncertain guess.
+Draw one tight bounding box around the **entire visible cutter**:
+- Include the complete outer carbide body and the diamond table.
+- Keep all visible carbide inside the box; do not crop the annotation to the diamond table.
+- Exclude unrelated background and drill-bit pocket material outside the cutter.
+- If the cutter is cut off by the photo edge or part of its outer boundary cannot be located, skip it unless the complete cutter target is still unambiguous.
 
-The annotation tool's **T** and **I** assignments are used only to route each image to the corresponding training dataset. They are not model targets.
+### Isometric
+
+Draw one tight bounding box around the **visible diamond table**:
+- Include the visible diamond material/table, including wear, chips, and spalling when its boundary remains locatable.
+- Exclude the carbide body and pocket from the annotation.
+- The final presentation crop will expand beyond this box to retain useful carbide context while making the diamond table visually prominent.
+
+Skip broken, obscured, blurry, or ambiguous targets rather than guessing. Multiple visible targets may be annotated individually.
+
+## Presentation crop requirements
+
+The detection box is a locator, not itself the final image crop.
+
+- **Top output:** square, fixed-resolution presentation image; the entire cutter must remain visible, centered, and surrounded by consistent margins. Never clip the carbide body.
+- **Isometric output:** square, fixed-resolution presentation image; center the diamond-table target and expand the crop enough that the table occupies a large, consistent portion of the frame while retaining some carbide context.
+- Normalize Top and Isometric independently. Do not force the apparent diamond-table scale in Isometric to match the full-cutter scale in Top.
+- Preserve the source orientation and aspect ratio. Use padding when a square crop extends beyond the source image rather than stretching the cutter.
+- Keep crop expansion/coverage settings explicit and shared between training validation and inference. Do not choose arbitrary final margins until representative predictions have been reviewed.
 
 ## Dataset structure
 
@@ -43,23 +70,23 @@ training/
     data.yaml
 ```
 
-Each image has a matching YOLO detection label with normalized `class x_center y_center width height` values. Split by physical cutter/sample or acquisition session when possible—not random near-duplicate frames—to reduce leakage. Keep source photos and the annotation manifest separate from generated training exports.
+Top and Isometric are separate one-class datasets. The annotation manifest stores normalized boxes against the original source images. The exporter must preserve the view-specific class names in each dataset YAML. Split by physical cutter/sample or acquisition session when possible—not random near-duplicate frames—to reduce leakage.
 
 ## Training and acceptance sequence
 
-1. Gather representative Top and Isometric photos, including lighting variation, wear, chips/spalling, partial occlusion, and edge-of-frame examples.
-2. Annotate visible diamond faces with bounding boxes and manually assign each image to Top or Isometric.
-3. Review a sample of boxes for consistent target boundaries before labeling the full set.
-4. Split train/validation by physical sample or acquisition session where possible.
-5. Train Top and Isometric independently using a documented pretrained YOLO object-detection checkpoint. Record model version, dataset revision, image size, epochs, and metrics.
-6. Evaluate held-out images and inspect missed detections, false positives, box tightness, and final crop results.
-7. Only after evaluation, wire each checkpoint into the cropper behind the explicit view supplied by the workflow. Use the predicted diamond-face box as the crop region; preserve the existing Face-view path.
+1. Re-annotate Top images using the complete-cutter target.
+2. Re-annotate Isometric images using the diamond-table target.
+3. Review samples from each view for consistent target boundaries before exporting.
+4. Export separate datasets and audit every image/label pair, normalized box, class ID, and train/validation split.
+5. Train Top and Isometric independently using documented pretrained YOLO detection checkpoints. Record model version, dataset revision, image size, epochs, and metrics.
+6. Evaluate held-out images visually, measuring missed detections, false positives, box tightness, and final presentation crop consistency.
+7. Implement deterministic view-specific crop expansion/normalization only after reviewing predictions on representative images.
+8. Only after evaluation, wire each checkpoint into the cropper behind the explicit view supplied by the workflow.
 
 ## Scope boundaries
 
 - No Top/Isometric view classifier.
-- No cutter-body polygon or diamond-face segmentation mask.
-- No changes to the production Face model or its crop behavior during this dataset-building phase.
+- No cutter-body segmentation or diamond-face segmentation mask.
+- No changes to the production Face-view model or crop behavior.
 - No automatic view inference from portrait/landscape orientation.
-
-No Top or Isometric model weights are included yet. Models can only be trained after representative images have been annotated and exported.
+- Preserve existing baseline model weights and the original source images/annotation manifest.
