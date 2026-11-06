@@ -16,6 +16,7 @@ from ultralytics import YOLO
 from crop_pipeline import (
     PROVISIONAL_CROP_COVERAGE,
     centered_detection_image,
+    crop_square,
     detection_region,
     map_box_to_full_image,
     square_crop_geometry,
