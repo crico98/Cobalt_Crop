@@ -6,4 +6,5 @@ __pycache__/
 # Local, proprietary annotation inputs and generated training outputs.
 dataset/train/images/
 dataset/top_isometric_annotations.json
-training/
+training_presentation/
+.vscode/
