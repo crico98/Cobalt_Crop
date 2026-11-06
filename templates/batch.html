@@ -25,7 +25,7 @@
       <div class="crop-control"><label for="portrait_height">Detection height: <output id="portrait_height_value">{{ portrait_height }}%</output></label><input id="portrait_height" name="portrait_height" type="range" min="25" max="100" step="1" value="{{ portrait_height }}"></div>
     </fieldset>
   </div>
-  <p class="muted">The red rectangle shows exactly which centered region the Face model will receive. Width and height can be adjusted independently. The final square crop is still taken from the full, manually oriented image.</p>
+  <p class="muted">The green rectangle shows exactly which centered region the Face model will receive. These sliders set the original region sizes; the preview and processing apply the agreed expansion automatically: images without manual rotation expand 5% in width and height, while manually rotated images keep the same width and expand 20% in height. The final square crop is still taken from the full, manually oriented image.</p>
   <button class="primary" type="submit">Auto Crop / Center Batch ({{ total }} images)</button>
 </form>
 
@@ -42,7 +42,7 @@
     <div>
       <h3>Working image</h3>
       <div class="image-frame">
-        <img class="preview working-preview" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
+        <img class="preview working-preview" data-manual-rotation="{{ item.rotation }}" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
         <div class="crop-guide" data-crop-guide aria-hidden="true"><span>Model sees this area</span></div>
       </div>
       <div class="actions">
@@ -92,10 +92,15 @@
       const guide = frame.querySelector("[data-crop-guide]");
       if (!image || !guide || !image.naturalWidth || !image.naturalHeight) return;
       const landscape = image.naturalWidth >= image.naturalHeight;
-      const width = Number(document.getElementById(landscape ? "landscape_width" : "portrait_width").value);
-      const height = Number(document.getElementById(landscape ? "landscape_height" : "portrait_height").value);
+      const baseWidth = Number(document.getElementById(landscape ? "landscape_width" : "portrait_width").value);
+      const baseHeight = Number(document.getElementById(landscape ? "landscape_height" : "portrait_height").value);
+      const manuallyRotated = Number(image.dataset.manualRotation || 0) % 360 !== 0;
+      const width = Math.min(100, Math.round(baseWidth * (manuallyRotated ? 1 : 1.05)));
+      const height = Math.min(100, Math.round(baseHeight * (manuallyRotated ? 1.20 : 1.05)));
       guide.style.width = width + "%";
       guide.style.height = height + "%";
+      const label = guide.querySelector("span");
+      if (label) label.textContent = "Model sees: " + width + "% W × " + height + "% H";
     });
   };
   fields.forEach((id) => document.getElementById(id).addEventListener("input", updateGuides));
