@@ -128,7 +128,11 @@ class Editor:
         view_label = self.view.upper() if self.view else "UNASSIGNED"
         lines = [
             f"{number}/{total}  {image_name}  |  VIEW: {view_label}  |  BOXES: {len(self.saved_boxes)}",
-            "Left-click + drag = box the visible diamond face (not carbide body or pocket)",
+            ("Top: box the entire visible cutter, including all carbide and diamond table"
+             if self.view == "top" else
+             "Isometric: box the diamond table only; exclude carbide body and pocket"
+             if self.view == "isometric" else
+             "Assign T or I, then draw the target box using that view's rules"),
             "Right-click = delete nearest box | U=undo last box | C=clear | R=reset",
             "T=Top | I=Isometric | S=save+next | N=skip | P=previous | Q/Esc=quit",
         ]
@@ -320,14 +324,15 @@ def export_datasets(image_root, output_root, manifest, manifest_path, val_fracti
                 continue
             destination_label.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+        target_name = "full_cutter" if view == "top" else "diamond_table"
         yaml = (
             "train: images/train\n"
             "val: images/val\n"
             "names:\n"
-            "  0: diamond_face\n"
+            f"  0: {target_name}\n"
         )
         (output_root / view / "data.yaml").write_text(yaml, encoding="utf-8")
-        print(f"{view}: exported {len(view_records)} annotated image(s).")
+        print(f"{view}: exported {len(view_records)} annotated image(s); class 0 = {target_name}.")
 
     print(f"YOLO object-detection datasets exported to: {output_root.resolve()}")
     print("Source images and the annotation manifest were not modified.")
