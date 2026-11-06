@@ -51,10 +51,11 @@
     state.boxes = (item.boxes || []).map(b => b.map(Number));
     state.selected = -1;
     state.dirty = false;
+    image.hidden = true;
+    canvas.hidden = true;
+    $("empty-state").hidden = false;
+    $("empty-state").textContent = "Loading image…";
     image.src = `/api/top-isometric/image?key=${encodeURIComponent(item.key)}`;
-    image.hidden = false;
-    canvas.hidden = false;
-    $("empty-state").hidden = true;
     $("position").textContent = `${state.index + 1} / ${state.images.length} · ${state.images.filter(x => x.annotated).length} annotated`;
     $("image-name").textContent = `${item.name} · ${item.width} × ${item.height}`;
     $("view-status").textContent = state.view ? `Assigned: ${state.view.toUpperCase()}` : "View not assigned";
@@ -66,11 +67,15 @@
   image.addEventListener("load", () => {
     canvas.width = image.naturalWidth;
     canvas.height = image.naturalHeight;
+    canvas.hidden = false;
+    $("empty-state").hidden = true;
     draw();
   });
   image.addEventListener("error", () => {
+    image.hidden = true;
+    canvas.hidden = true;
     $("empty-state").hidden = false;
-    $("empty-state").textContent = "Could not load this image.";
+    $("empty-state").textContent = "Could not load this image. Try moving to another image and back.";
   });
 
   canvas.addEventListener("pointerdown", event => {
@@ -201,6 +206,7 @@
     .then(data => {
       state.images = data.images || [];
       if (!state.images.length) {
+        $("empty-state").hidden = false;
         $("empty-state").textContent = data.error || "No images found in dataset/train/images.";
         $("position").textContent = "0 images";
         return;
@@ -208,6 +214,7 @@
       renderCurrent();
     })
     .catch(error => {
+      $("empty-state").hidden = false;
       $("empty-state").textContent = `Could not load image list: ${error.message}`;
       $("position").textContent = "Image list unavailable";
     });
