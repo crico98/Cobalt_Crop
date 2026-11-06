@@ -53,7 +53,7 @@
     const item = current();
     if (!item) return;
     state.view = item.view || "";
-    state.boxes = (item.boxes || []).map(b => b.map(Number));
+    state.boxes = (item.target_current ? (item.boxes || []) : []).map(b => b.map(Number));
     state.selected = -1;
     state.dirty = false;
     image.hidden = true;
@@ -66,7 +66,7 @@
     $("view-status").textContent = state.view ? `Assigned: ${state.view.toUpperCase()}` : "View not assigned";
     $("view-top").classList.toggle("view-active", state.view === "top");
     $("view-isometric").classList.toggle("view-active", state.view === "isometric");
-    setStatus(item.annotated ? "Saved annotation loaded." : "Not yet annotated.");
+    setStatus(item.annotated ? "Saved current-target annotation loaded." : (item.target_current === false ? "Legacy diamond-face boxes are not valid for these targets. Redraw this image." : "Not yet annotated."));
     draw();
   }
   image.addEventListener("load", () => {
