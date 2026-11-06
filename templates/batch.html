@@ -50,6 +50,7 @@
         <form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='right') }}"><button class="secondary">↷ Rotate right</button></form>
       </div>
       <p class="muted">Manual rotation: {{ item.rotation }}°</p>
+      <p class="muted">Source EXIF orientation: {{ item.source_exif_orientation }} (applied on upload)</p>
     </div>
     <div>
       <h3>Centered crop</h3>
