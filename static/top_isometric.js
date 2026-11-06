@@ -22,14 +22,19 @@
     if (!image.naturalWidth) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     state.boxes.forEach((b, i) => {
-      ctx.lineWidth = Math.max(2, canvas.width / 700);
-      ctx.strokeStyle = i === state.selected ? "#ffd43b" : "#ff453a";
-      ctx.fillStyle = i === state.selected ? "rgba(255,212,59,.12)" : "rgba(255,69,58,.08)";
-      ctx.fillRect(b[0] * canvas.width, b[1] * canvas.height,
-        (b[2] - b[0]) * canvas.width, (b[3] - b[1]) * canvas.height);
-      ctx.strokeRect(b[0] * canvas.width, b[1] * canvas.height,
-        (b[2] - b[0]) * canvas.width, (b[3] - b[1]) * canvas.height);
-      ctx.fillStyle = ctx.strokeStyle;
+      const x = b[0] * canvas.width, y = b[1] * canvas.height;
+      const w = (b[2] - b[0]) * canvas.width, h = (b[3] - b[1]) * canvas.height;
+      const color = i === state.selected ? "#ffe14a" : "#36e0ff";
+      ctx.fillStyle = i === state.selected ? "rgba(255,225,74,.20)" : "rgba(54,224,255,.16)";
+      ctx.fillRect(x, y, w, h);
+      // Dark halo plus bright stroke keeps the box visible on both light and dark cutters.
+      ctx.lineWidth = Math.max(5, canvas.width / 350);
+      ctx.strokeStyle = "rgba(0,0,0,.92)";
+      ctx.strokeRect(x, y, w, h);
+      ctx.lineWidth = Math.max(2.5, canvas.width / 650);
+      ctx.strokeStyle = color;
+      ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = color;
       ctx.font = `bold ${Math.max(14, canvas.width / 55)}px system-ui`;
       ctx.fillText(String(i + 1), b[0] * canvas.width + 5, b[1] * canvas.height + 20);
     });
@@ -67,6 +72,7 @@
   image.addEventListener("load", () => {
     canvas.width = image.naturalWidth;
     canvas.height = image.naturalHeight;
+    image.hidden = false;
     canvas.hidden = false;
     $("empty-state").hidden = true;
     draw();
