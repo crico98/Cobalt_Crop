@@ -82,6 +82,13 @@ python -m tools.train_top_isometric --view all
 ```
 Defaults are `yolo11n.pt`, 1024 image size, 100 epochs, batch 4, patience 25, GPU 0, and zero data-loader workers. Use `--view top` or `--view isometric` to train one model. Checkpoints are written under `models/top_view/` and `models/isometric_view/`.
 
+## Automated checks
+
+Run the unit tests from the project root after installing the requirements:
+```powershell
+python -m unittest discover -s tests
+```
+
 ## Top and Isometric cutter annotation
 
 The Flask app includes a browser-based editor for separate YOLO **object-detection** datasets for manually assigned **Top** and **Isometric** views. These experimental datasets do not modify or replace the production Face model or crop workflow.
