@@ -58,23 +58,19 @@ See [TRAINING_PLAN.md](TRAINING_PLAN.md) for the independent Top and Isometric d
 
 The upload pipeline applies the image's EXIF orientation once with Pillow's `ImageOps.exif_transpose()`, then saves normalized RGB pixels as `working.png`. The original EXIF orientation value is retained in the in-memory job metadata for diagnostics. Manual rotation is an additional correction relative to this normalized image. Detection-region selection, model coordinates, and final crop coordinates all use the normalized working-image pixel space.
 
-The existing annotation manifest and `training_presentation/` export are the baseline and are not changed by training preparation. To create a separate orientation-normalized dataset with the agreed derived-box margins:
+The existing annotation manifest and `training_presentation/` export are the baseline and are not changed by training preparation. Build a separate derived dataset:
 
-1. Generate an image-by-image rotation template:
-   ```powershell
-   python -m tools.prepare_top_isometric_training --write-rotation-template
-   ```
-2. Edit `dataset/training_rotation_manifest.json`. For every image, set `manual_rotation_degrees` to `0`, `90`, `180`, or `270` clockwise **after EXIF normalization**. Do not infer this value from EXIF and do not reuse an old pre-EXIF manual rotation without checking the image in the updated app.
-3. Build the derived dataset:
-   ```powershell
-   python -m tools.prepare_top_isometric_training
-   ```
+```powershell
+python -m tools.prepare_top_isometric_training
+```
 
-The derived dataset is written to `training_presentation_exif_normalized/` and keeps the existing train/validation split. Images are physically EXIF-normalized, any explicitly classified additional rotation is applied to pixels and boxes, and PNG output removes EXIF ambiguity. Derived labels use:
-- No additional manual rotation: +5% total width and +5% total height.
-- Additional manual rotation: unchanged width and +20% total height.
+The preparation script reads each exported image's EXIF orientation, applies EXIF normalization once to the pixels, and uses EXIF as the source of truth for the expansion group. Orientations 5, 6, 7, and 8 use the rotated-image expansion; orientation 1 and other non-quarter-turn orientations use the standard expansion. The existing labels are already in the EXIF-corrected coordinate convention, so the script does not rotate those boxes a second time. PNG output removes EXIF ambiguity.
 
-Expansion is symmetric around the original box center and is limited symmetrically at image boundaries. The preparation script requires an explicit rotation classification for every annotated image; it does not guess from EXIF. Original annotations and the baseline export remain read-only. Review the derived images and labels before training.
+The derived dataset is written to `training_presentation_exif_normalized/` and keeps the existing train/validation split. Derived labels use:
+- EXIF-normal/non-rotated group: +5% total width and +5% total height.
+- EXIF quarter-turn group: unchanged width and +20% total height.
+
+Expansion is symmetric around the original box center and is limited symmetrically at image boundaries. The preparation summary records EXIF orientation counts. Original annotations and the baseline export remain read-only. Review the derived images and labels before training.
 
 Train the independent detectors only after that visual review:
 ```powershell
