@@ -76,13 +76,13 @@ Top and Isometric are separate one-class datasets. The annotation manifest store
 
 The app normalizes EXIF orientation once during upload and then treats the resulting pixels as the working-image coordinate system. For training, create a separate derived dataset from the current `training_presentation/` export. Do not overwrite the original annotation manifest or baseline export.
 
-The preparation tool requires an explicit per-image `manual_rotation_degrees` value (0, 90, 180, or 270 clockwise) describing any additional rotation needed **after EXIF normalization**. EXIF values are not a substitute for this classification. The tool physically applies EXIF and declared manual rotations to image pixels, applies the same transform to the YOLO boxes, and writes PNGs without orientation metadata.
+The preparation tool reads EXIF metadata from each exported image and uses it as the source of truth for the expansion group. It applies EXIF normalization to image pixels once and writes PNGs without orientation metadata. Existing YOLO labels are already in the EXIF-corrected coordinate convention, so labels must not be rotated a second time.
 
 Derived box expansion:
-- No additional manual rotation: 1.05× width and 1.05× height (5% total expansion in each dimension).
-- Additional manual rotation: 1.00× width and 1.20× height (10% of original height on each side).
+- EXIF orientation 1 / non-quarter-turn group: 1.05× width and 1.05× height (5% total expansion in each dimension).
+- EXIF orientations 5, 6, 7, or 8 / quarter-turn group: 1.00× width and 1.20× height (10% of original height on each side).
 
-Expansion remains centered on the original box and is symmetrically limited at image edges. The derived output is `training_presentation_exif_normalized/`; keep it separate from the original `training_presentation/` baseline. Visually inspect representative and edge-limited boxes before training.
+Expansion remains centered on the original box and is symmetrically limited at image edges. The derived output is `training_presentation_exif_normalized/`; keep it separate from the original `training_presentation/` baseline. The preparation summary records the EXIF orientation counts. Visually inspect representative and edge-limited boxes before training.
 
 Training entry point: `python -m tools.train_top_isometric --view all`. Defaults: pretrained `yolo11n.pt`, 1024 image size, 100 epochs, batch 4, patience 25, GPU 0, and Windows-friendly workers=0. Top and Isometric are trained independently; outputs are stored under `models/top_view/` and `models/isometric_view/`.
 
@@ -92,7 +92,7 @@ Training entry point: `python -m tools.train_top_isometric --view all`. Defaults
 2. Review existing Isometric diamond-face boxes to confirm they tightly represent the visible diamond table; redraw only inconsistent examples.
 3. Review samples from each view for consistent target boundaries before exporting.
 4. Export separate baseline datasets and audit every image/label pair, normalized box, class ID, and train/validation split.
-5. Complete the per-image post-EXIF rotation manifest, then build the separate EXIF-normalized dataset with the agreed derived-box expansions. Do not infer manual rotation from EXIF.
+5. Build the separate EXIF-normalized dataset; derive the rotated-image expansion group directly from each image's EXIF orientation.
 6. Visually review the derived images and labels, including rotated examples and boxes constrained by image edges.
 7. Train Top and Isometric independently using the documented pretrained YOLO detection checkpoint. Record model version, dataset revision, image size, epochs, and metrics.
 8. Evaluate held-out images visually, measuring missed detections, false positives, box tightness, and final presentation crop consistency.
