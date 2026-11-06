@@ -219,7 +219,8 @@ def edit_one(image_path, image_root, manifest, manifest_path, number, total):
                     continue
                 manifest["annotations"][key] = {
                     "view": editor.view,
-                    "boxes": editor.saved_boxes,\n                    "target_version": 2,
+                    "boxes": editor.saved_boxes,
+                    "target_version": 2,
                 }
                 save_manifest(manifest_path, manifest)
                 print(f"Saved {len(editor.saved_boxes)} box(es): {key} ({editor.view})")
