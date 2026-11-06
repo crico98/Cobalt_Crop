@@ -158,7 +158,7 @@ def crop_square(image: Image.Image, box: tuple[int, int, int, int], output_size:
     return canvas
 
 
-def choose_detection(result, image_size: tuple[int, int]):
+def choose_detection(result):
     """Select the most confident valid detector box; return box and confidence."""
     boxes = getattr(result, "boxes", None)
     if boxes is None or len(boxes) == 0:
