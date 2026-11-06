@@ -194,7 +194,7 @@ def upload():
     prepared = []
     matched_names = set()
     for manifest_item in manifest_items:
-        photo_name = Path(manifest_item.file_path.replace("\\\\", "/")).name
+        photo_name = Path(manifest_item.file_path.replace("\\", "/")).name
         key = secure_filename(photo_name).casefold()
         if key not in uploaded_by_name:
             abort(400, f"Manifest photo was not included in this upload: {photo_name}")
