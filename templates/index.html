@@ -13,6 +13,7 @@
 <button type="submit">Upload image batch</button></form>
 <p class="muted">Supported: JPG, PNG, WEBP, BMP, TIFF. Combined upload limit: {{ max_upload_mb }} MB. Maximum {{ max_files }} images per batch.</p>
 <p class="muted">Change the combined upload limit with the CROPPER_MAX_UPLOAD_MB environment variable. Orientation is never corrected automatically.</p>
+<p><a class="download" href="{{ url_for('top_isometric.editor') }}">Open Top / Isometric Annotation Editor</a></p>
 </main>
 <script>
 const input=document.getElementById('images'),selection=document.getElementById('selection');
