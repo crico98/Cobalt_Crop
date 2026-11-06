@@ -21,4 +21,9 @@ def normalize_uploaded_image(image: Image.Image) -> Image.Image:
     carry the original EXIF orientation, so downstream rotation, detection,
     and crop coordinates all use the same physical pixel coordinate system.
     """
-    return ImageOps.exif_transpose(image).convert("RGB")
+    normalized = ImageOps.exif_transpose(image)
+    exif = normalized.getexif()
+    if EXIF_ORIENTATION_TAG in exif:
+        del exif[EXIF_ORIENTATION_TAG]
+    normalized.info.pop("exif", None)
+    return normalized.convert("RGB")
