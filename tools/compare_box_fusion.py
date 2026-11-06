@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import math
 from pathlib import Path
 import sys
 
@@ -17,8 +16,6 @@ from ultralytics import YOLO
 from crop_pipeline import (
     PROVISIONAL_CROP_COVERAGE,
     centered_detection_image,
-    choose_detection,
-    crop_square,
     detection_region,
     map_box_to_full_image,
     square_crop_geometry,
@@ -244,8 +241,8 @@ def main():
         fused_candidates = fuse_candidates(fusion_pool, args.fusion_iou)
 
         methods = {
-            "baseline": (baseline_candidates, choose_detection(baseline_result)),
-            "nms": (nms_candidates, choose_detection(nms_result)),
+            "baseline": (baseline_candidates, choose_from_candidates(baseline_candidates, model_image.size)),
+            "nms": (nms_candidates, choose_from_candidates(nms_candidates, model_image.size)),
             "wbf": (fused_candidates, choose_from_candidates(fused_candidates, model_image.size)),
         }
         selected_by_method = {}
@@ -297,9 +294,6 @@ def main():
 
         selections = selected_by_method
         base, nms, wbf = selections["baseline"], selections["nms"], selections["wbf"]
-        summary_rows[-3]["baseline_selected_candidate"] = base["candidate"] if base else "NONE"
-        summary_rows[-2]["baseline_selected_candidate"] = base["candidate"] if base else "NONE"
-        summary_rows[-1]["baseline_selected_candidate"] = base["candidate"] if base else "NONE"
         print(
             f"{image_name}: candidates baseline={len(baseline_candidates)}, "
             f"NMS={len(nms_candidates)}, fusion pool={len(fusion_pool)}, "
