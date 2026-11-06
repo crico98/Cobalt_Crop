@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import math
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Mapping
@@ -37,7 +36,6 @@ PROVISIONAL_CROP_COVERAGE = {
     "isometric": 0.65,
 }
 OUTPUT_SIZE = 1200
-_ANGLE_PATTERN = re.compile(r"(?:^|[^A-Za-z0-9])angle_([A-Za-z0-9]+)(?:$|[^A-Za-z0-9])", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -48,48 +46,51 @@ class BatchItem:
     order: int
 
 
-def resolve_angle(file_path: str | Path) -> tuple[str, str, int]:
-    """Return (angle_id, view, processing_order); reject ambiguous filenames."""
-    name = Path(str(file_path).replace("\\", "/")).name
-    matches = list(_ANGLE_PATTERN.finditer(name))
-    if len(matches) != 1:
-        reason = "missing" if not matches else "ambiguous"
-        raise ValueError(f"{reason.title()} angle identifier in filename: {name}")
-    angle_id = matches[0].group(1)
-    if not angle_id.isdigit():
-        raise ValueError(f"Malformed angle identifier angle_{angle_id} in filename: {name}")
+def resolve_angle_index(angle_index) -> tuple[str, str, int]:
+    """Resolve the explicit JSON angle_index into (ID, view, processing order)."""
+    if isinstance(angle_index, bool):
+        raise ValueError("angle_index must be 0, 1, or 2.")
+    if isinstance(angle_index, int):
+        angle_id = str(angle_index)
+    elif isinstance(angle_index, str) and angle_index.strip().isdigit():
+        angle_id = str(int(angle_index.strip()))
+    else:
+        raise ValueError(f"Invalid angle_index: {angle_index!r}. Expected 0, 1, or 2.")
     if angle_id not in ANGLE_VIEWS:
-        raise ValueError(f"Unsupported angle identifier angle_{angle_id} in filename: {name}")
+        raise ValueError(f"Unsupported angle_index {angle_id}. Expected 0, 1, or 2.")
     view, order = ANGLE_VIEWS[angle_id]
     return angle_id, view, order
 
 
 def normalize_manifest_records(records: Iterable[Mapping]) -> list[BatchItem]:
-    """Adapt records with the known file_path field into stable view groups.
-
-    The caller owns decoding the actual manifest envelope. Each record must
-    expose file_path; no undocumented BitHub envelope keys are assumed here.
-    """
+    """Validate explicit {file_path, angle_index} records and group stably by view."""
     items = []
+    seen_paths = set()
     for index, record in enumerate(records):
         if not isinstance(record, Mapping):
             raise ValueError(f"Manifest record {index + 1} must be an object.")
         raw_path = record.get("file_path")
         if not isinstance(raw_path, str) or not raw_path.strip():
             raise ValueError(f"Manifest record {index + 1} is missing file_path.")
-        angle_id, view, order = resolve_angle(raw_path)
+        normalized_path = Path(raw_path.replace("\\\\", "/")).name
+        if not normalized_path:
+            raise ValueError(f"Manifest record {index + 1} has an invalid file_path.")
+        key = normalized_path.casefold()
+        if key in seen_paths:
+            raise ValueError(f"Manifest contains duplicate photo filename: {normalized_path}")
+        seen_paths.add(key)
+        if "angle_index" not in record:
+            raise ValueError(f"Manifest record {index + 1} is missing angle_index.")
+        angle_id, view, order = resolve_angle_index(record["angle_index"])
         items.append(BatchItem(raw_path, angle_id, view, order))
     return sorted(items, key=lambda item: item.order)
 
 
 def load_manifest_records(path: str | Path) -> list[BatchItem]:
-    """Load the adapter's fixture-friendly JSON array of {file_path: ...} records."""
+    """Load JSON records containing file_path and angle_index."""
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(payload, list):
-        raise ValueError(
-            "The adapter expects a JSON array of records containing file_path. "
-            "The BitHub manifest envelope has not yet been confirmed."
-        )
+        raise ValueError("The StandAlone manifest must be a JSON array of photo records.")
     return normalize_manifest_records(payload)
 
 
