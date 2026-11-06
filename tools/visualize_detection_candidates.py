@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+# Running a script from tools/ puts tools/, not the repository root, on sys.path.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
@@ -36,7 +41,7 @@ def main():
     parser.add_argument("--output", default=None)
     args = parser.parse_args()
 
-    root = Path(__file__).resolve().parents[1]
+    root = PROJECT_ROOT
     batch_dir = root / "work" / "crop_test_batch"
     image_path = batch_dir / args.image
     manifest_path = batch_dir / "manifest.json"
