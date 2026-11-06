@@ -75,7 +75,7 @@
 {% endfor %}
 </section>
 
-<p class="muted">Square crops use the V2 model's 87.5% face-coverage target and pad beyond image edges. Images are processed sequentially on the CPU. Manual rotation is preserved; no automatic EXIF rotation or deskew is applied.</p>
+<p class="muted">Square crops use the V2 model's 87.5% face-coverage target and pad beyond image edges. Images are processed sequentially on the CPU. EXIF is applied once during upload; any additional manual rotation is preserved. No deskew is applied.</p>
 </main>
 <script>
 (() => {
