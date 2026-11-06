@@ -10,6 +10,7 @@ from tools.edit_top_isometric_labels import (
     collect_images,
     export_datasets,
     load_manifest,
+    legacy_polygons_to_boxes,
     relative_key,
     save_manifest,
 )
@@ -56,6 +57,16 @@ def _validated_boxes(raw_boxes) -> list[list[float]]:
     return boxes
 
 
+@top_isometric.errorhandler(400)
+def bad_request(error):
+    return jsonify({"error": getattr(error, "description", "Bad request.")}), 400
+
+
+@top_isometric.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": getattr(error, "description", "Not found.")}), 404
+
+
 @top_isometric.get("/annotate")
 def editor():
     return render_template("top_isometric.html")
@@ -81,7 +92,7 @@ def image_index():
             continue
         boxes = record.get("boxes")
         if boxes is None:
-            boxes = []
+            boxes = legacy_polygons_to_boxes(record.get("polygons", []))
         results.append({
             "key": key,
             "name": path.name,
