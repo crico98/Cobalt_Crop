@@ -113,7 +113,7 @@ def main():
     skipped = []
 
     for record in records:
-        image_name = Path(record["file_path"].replace("\\\\", "/")).name
+        image_name = Path(record["file_path"].replace("\\", "/")).name
         if requested is not None and image_name.casefold() not in requested:
             continue
         view = {0: "isometric", 1: "top", 2: "face"}.get(int(record["angle_index"]))
@@ -201,7 +201,7 @@ def main():
         writer.writeheader()
         writer.writerows(candidate_rows)
 
-    print("\\nNMS COMPARISON COMPLETE")
+    print("\nNMS COMPARISON COMPLETE")
     print(f"Images analyzed: {len(summary)}")
     print(f"Summary: {summary_path}")
     print(f"Candidate metrics: {candidates_path}")
