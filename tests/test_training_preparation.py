@@ -1,7 +1,20 @@
 import unittest
 
-from tools.prepare_top_isometric_training import expand_box, rotate_box
+from tools.prepare_top_isometric_training import expand_box, is_exif_quarter_turn, rotate_box
 
+
+
+class ExifExpansionClassificationTests(unittest.TestCase):
+    def test_orientation_one_uses_standard_expansion(self):
+        self.assertFalse(is_exif_quarter_turn(1))
+
+    def test_orientation_six_uses_rotated_expansion(self):
+        self.assertTrue(is_exif_quarter_turn(6))
+
+    def test_all_quarter_turn_orientations_use_rotated_expansion(self):
+        for orientation in (5, 6, 7, 8):
+            with self.subTest(orientation=orientation):
+                self.assertTrue(is_exif_quarter_turn(orientation))
 
 class DerivedTrainingBoxTests(unittest.TestCase):
     def setUp(self):
