@@ -130,4 +130,3 @@ python tools/edit_top_isometric_labels.py --export-only
 - Keep `FaceFinder` and crop logic independent for eventual Dash integration.
 #   S t a n d a l o n e - C r o p 
  
- 
