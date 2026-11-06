@@ -99,8 +99,9 @@ def image_index():
             "width": width,
             "height": height,
             "view": record.get("view", ""),
-            "boxes": boxes,
-            "annotated": bool(record.get("view") in {"top", "isometric"} and boxes),
+            "boxes": boxes if record.get("target_version") == 2 else [],
+            "target_current": record.get("target_version") == 2,
+            "annotated": bool(record.get("view") in {"top", "isometric"} and record.get("target_version") == 2 and boxes),
         })
     return jsonify({"images": results})
 
@@ -126,7 +127,7 @@ def save_annotation():
     else:
         if view not in {"top", "isometric"}:
             abort(400, "Assign this image as Top or Isometric before saving boxes.")
-        manifest["annotations"][key] = {"view": view, "boxes": boxes}
+        manifest["annotations"][key] = {"view": view, "boxes": boxes, "target_version": 2}
 
     save_manifest(MANIFEST_PATH, manifest)
     return jsonify({
