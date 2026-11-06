@@ -72,7 +72,7 @@ def normalize_manifest_records(records: Iterable[Mapping]) -> list[BatchItem]:
         raw_path = record.get("file_path")
         if not isinstance(raw_path, str) or not raw_path.strip():
             raise ValueError(f"Manifest record {index + 1} is missing file_path.")
-        normalized_path = Path(raw_path.replace("\\\\", "/")).name
+        normalized_path = Path(raw_path.replace("\\", "/")).name
         if not normalized_path:
             raise ValueError(f"Manifest record {index + 1} has an invalid file_path.")
         key = normalized_path.casefold()
