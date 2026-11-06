@@ -10,13 +10,13 @@ from pathlib import Path
 
 from PIL import Image, ImageOps
 
+from image_orientation import read_exif_orientation
+
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SOURCE = ROOT / "training_presentation"
 DEFAULT_OUTPUT = ROOT / "training_presentation_exif_normalized"
 DEFAULT_ANNOTATIONS = ROOT / "dataset" / "top_isometric_annotations.json"
-DEFAULT_ROTATIONS = ROOT / "dataset" / "training_rotation_manifest.json"
-VALID_ROTATIONS = {0, 90, 180, 270}
 
 
 def safe_stem(relative_path: str) -> str:
@@ -43,60 +43,6 @@ def annotation_records(manifest: dict) -> dict[str, str]:
     if not records:
         raise ValueError("No current Top or Isometric box annotations were found.")
     return records
-
-
-def write_rotation_template(records: dict[str, str], path: Path, overwrite: bool = False) -> None:
-    if path.exists() and not overwrite:
-        raise FileExistsError(
-            f"Rotation template already exists: {path}. Use --overwrite-template to replace it."
-        )
-    payload = {
-        "version": 1,
-        "rotation_convention": "Clockwise degrees applied after EXIF normalization; use 0, 90, 180, or 270.",
-        "images": {
-            key: {"manual_rotation_degrees": None}
-            for key in sorted(records)
-        },
-    }
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-
-
-def load_rotation_manifest(path: Path, expected_keys: set[str]) -> dict[str, int]:
-    if not path.is_file():
-        raise FileNotFoundError(
-            f"Rotation manifest not found: {path}. First run with --write-rotation-template."
-        )
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    images = payload.get("images")
-    if payload.get("version") != 1 or not isinstance(images, dict):
-        raise ValueError("Rotation manifest must use version 1 and contain an images object.")
-
-    missing = sorted(expected_keys - set(images))
-    extra = sorted(set(images) - expected_keys)
-    if missing or extra:
-        parts = []
-        if missing:
-            parts.append(f"{len(missing)} missing image classification(s): {missing[:8]}")
-        if extra:
-            parts.append(f"{len(extra)} unknown image key(s): {extra[:8]}")
-        raise ValueError("Rotation manifest does not match the annotation set: " + "; ".join(parts))
-
-    rotations = {}
-    incomplete = []
-    for key in sorted(expected_keys):
-        entry = images[key]
-        value = entry.get("manual_rotation_degrees") if isinstance(entry, dict) else None
-        if isinstance(value, bool) or not isinstance(value, int) or value not in VALID_ROTATIONS:
-            incomplete.append(key)
-        else:
-            rotations[key] = value
-    if incomplete:
-        raise ValueError(
-            "Set manual_rotation_degrees to 0, 90, 180, or 270 for every image. "
-            f"Unclassified examples: {incomplete[:10]}"
-        )
-    return rotations
 
 
 def rotate_box(box: tuple[float, float, float, float], degrees: int):
@@ -167,12 +113,11 @@ def find_export_pair(source_root: Path, view: str, stem: str):
 
 
 def prepare_dataset(source_root: Path, output_root: Path, annotations_path: Path,
-                    rotations_path: Path, overwrite: bool = False):
+                    overwrite: bool = False):
     if not source_root.is_dir():
         raise FileNotFoundError(f"Source YOLO export not found: {source_root}")
     annotation_manifest = json.loads(annotations_path.read_text(encoding="utf-8"))
     records = annotation_records(annotation_manifest)
-    rotations = load_rotation_manifest(rotations_path, set(records))
 
     if output_root.exists():
         if not overwrite:
@@ -184,8 +129,7 @@ def prepare_dataset(source_root: Path, output_root: Path, annotations_path: Path
     summary = {
         "source": str(source_root),
         "annotations": str(annotations_path),
-        "rotation_manifest": str(rotations_path),
-        "rotation_degrees": dict(Counter(map(str, rotations.values()))),
+        "exif_orientation_counts": {},
         "expansion": {
             "not_rotated": {"width_total": 1.05, "height_total": 1.05},
             "rotated_after_exif": {"width_total": 1.0, "height_total": 1.20},
@@ -199,13 +143,17 @@ def prepare_dataset(source_root: Path, output_root: Path, annotations_path: Path
         for key in sorted(view_keys):
             stem = safe_stem(key)
             split, source_image_path, source_label_path = find_export_pair(source_root, view, stem)
-            rotation = rotations[key]
             label_rows = read_yolo_labels(source_label_path)
 
             with Image.open(source_image_path) as source_image:
+                exif_orientation = read_exif_orientation(source_image)
                 image = ImageOps.exif_transpose(source_image).convert("RGB")
-            if rotation:
-                image = image.rotate(-rotation, expand=True)
+            # EXIF is the source of truth for the rotated-image expansion group.
+            # Normalize pixels once; do not rotate the already-oriented labels again.
+            exif_rotated = exif_orientation in {5, 6, 7, 8}
+            summary["exif_orientation_counts"][str(exif_orientation)] = (
+                summary["exif_orientation_counts"].get(str(exif_orientation), 0) + 1
+            )
 
             output_image_dir = output_root / view / "images" / split
             output_label_dir = output_root / view / "labels" / split
@@ -215,8 +163,7 @@ def prepare_dataset(source_root: Path, output_root: Path, annotations_path: Path
 
             lines = []
             for class_id, original_box in label_rows:
-                rotated_box = rotate_box(original_box, rotation)
-                x1, y1, x2, y2 = expand_box(rotated_box, rotated=rotation != 0)
+                x1, y1, x2, y2 = expand_box(original_box, rotated=exif_rotated)
                 xc, yc = (x1 + x2) / 2.0, (y1 + y2) / 2.0
                 width, height = x2 - x1, y2 - y1
                 lines.append(f"{class_id} {xc:.6f} {yc:.6f} {width:.6f} {height:.6f}")
@@ -252,22 +199,11 @@ def main():
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--annotations", type=Path, default=DEFAULT_ANNOTATIONS)
-    parser.add_argument("--rotations", type=Path, default=DEFAULT_ROTATIONS)
-    parser.add_argument("--write-rotation-template", action="store_true")
-    parser.add_argument("--overwrite-template", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
-    if args.write_rotation_template:
-        manifest = json.loads(args.annotations.read_text(encoding="utf-8"))
-        records = annotation_records(manifest)
-        write_rotation_template(records, args.rotations, overwrite=args.overwrite_template)
-        print(f"Created rotation template for {len(records)} annotated images: {args.rotations}")
-        print("Classify every image with 0, 90, 180, or 270 clockwise degrees after EXIF normalization.")
-        return
-
     prepare_dataset(
-        args.source, args.output, args.annotations, args.rotations,
+        args.source, args.output, args.annotations,
         overwrite=args.overwrite,
     )
 
