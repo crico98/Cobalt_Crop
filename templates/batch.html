@@ -10,7 +10,7 @@
 <main class="shell wide">
 <a class="back" href="{{ url_for('index') }}">← Upload another batch</a>
 <h1>Cutter Face Cropper</h1>
-<p class="sub">Review each working image, adjust the centered detection region, rotate manually if needed, and process the batch.</p>
+<p class="sub">Review each EXIF-normalized working image, adjust the centered detection region, rotate further only if needed, and process the batch.</p>
 
 <form method="post" action="{{ url_for('autocrop_batch', batch_id=batch_id) }}" class="batch-action">
   <div class="crop-controls">
