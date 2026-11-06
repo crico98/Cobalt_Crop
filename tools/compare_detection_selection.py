@@ -44,6 +44,18 @@ def choose(candidates, key):
     return min(candidates, key=key)["candidate"]
 
 
+def box_iou(box_a, box_b):
+    ax1, ay1, ax2, ay2 = box_a
+    bx1, by1, bx2, by2 = box_b
+    intersection_width = max(0.0, min(ax2, bx2) - max(ax1, bx1))
+    intersection_height = max(0.0, min(ay2, by2) - max(ay1, by1))
+    intersection = intersection_width * intersection_height
+    area_a = max(0.0, ax2 - ax1) * max(0.0, ay2 - ay1)
+    area_b = max(0.0, bx2 - bx1) * max(0.0, by2 - by1)
+    union = area_a + area_b - intersection
+    return intersection / union if union > 0 else 0.0
+
+
 def analyze_candidates(result, image_size, region_size, confidence_floor):
     boxes = getattr(result, "boxes", None)
     if boxes is None or len(boxes) == 0:
@@ -82,6 +94,17 @@ def analyze_candidates(result, image_size, region_size, confidence_floor):
 
     if not candidates:
         return []
+
+    # Pairwise IoU is diagnostic only; it does not merge or remove detections.
+    for item in candidates:
+        item["pairwise_iou"] = {}
+        for other in candidates:
+            if other is item:
+                continue
+            item["pairwise_iou"][other["candidate"]] = box_iou(
+                item["box_region"], other["box_region"]
+            )
+        item["max_pairwise_iou"] = max(item["pairwise_iou"].values(), default=0.0)
 
     highest_confidence = max(item["confidence"] for item in candidates)
     within_current_tolerance = [
@@ -131,7 +154,7 @@ def analyze_candidates(result, image_size, region_size, confidence_floor):
 def save_disagreement_overlay(image, offset, region_size, candidates, image_name, output_dir):
     selections = candidates[0]["selections"] if candidates else {}
     selected_values = set(value for value in selections.values() if value is not None)
-    if len(set(selections.values())) <= 1:
+    if len(candidates) <= 1 and len(set(selections.values())) <= 1:
         return None
 
     overlay = image.copy().convert("RGB")
@@ -169,6 +192,9 @@ def save_disagreement_overlay(image, offset, region_size, candidates, image_name
             f"{item['candidate']} conf={item['confidence']:.3f} "
             f"center={item['center_distance']:.4f} "
             f"edge={item['edge_margin_px']:.0f}px "
+            f"maxIoU={item['max_pairwise_iou']:.3f} "
+            f"box=({item['box_region'][0]:.0f},{item['box_region'][1]:.0f},"
+            f"{item['box_region'][2]:.0f},{item['box_region'][3]:.0f}) "
             f"score={item['weighted_score']:.4f}"
         )
         label_y = max(0, full_box[1] - small_font.size - 10)
@@ -265,6 +291,21 @@ def main():
                 selections["center_with_confidence_floor"] or "NONE"
             ),
             "strategies_disagree": len(set(selections.values())) > 1,
+            "max_pairwise_iou": max(
+                (item["max_pairwise_iou"] for item in candidates), default=0.0
+            ),
+            "highest_iou_pair": "/".join(
+                str(value) for value in max(
+                    (
+                        (item["candidate"], other, round(overlap, 6))
+                        for item in candidates
+                        for other, overlap in item["pairwise_iou"].items()
+                        if item["candidate"] < other
+                    ),
+                    key=lambda pair: pair[2],
+                    default=("NONE", "NONE", 0.0),
+                )
+            ),
         })
 
         for item in candidates:
@@ -276,6 +317,15 @@ def main():
                 "center_distance": f"{item['center_distance']:.6f}",
                 "edge_margin_px": f"{item['edge_margin_px']:.1f}",
                 "weighted_score_70_30": f"{item['weighted_score']:.6f}",
+                "box_x1": f"{item['box_region'][0]:.2f}",
+                "box_y1": f"{item['box_region'][1]:.2f}",
+                "box_x2": f"{item['box_region'][2]:.2f}",
+                "box_y2": f"{item['box_region'][3]:.2f}",
+                "max_pairwise_iou": f"{item['max_pairwise_iou']:.6f}",
+                "iou_C1": f"{item['pairwise_iou'].get('C1', 0.0):.6f}",
+                "iou_C2": f"{item['pairwise_iou'].get('C2', 0.0):.6f}",
+                "iou_C3": f"{item['pairwise_iou'].get('C3', 0.0):.6f}",
+                "iou_C4": f"{item['pairwise_iou'].get('C4', 0.0):.6f}",
                 "selected_current_3pp": item["selected_current_3pp"],
                 "selected_center_first": item["selected_center_first"],
                 "selected_weighted_70_30": item["selected_weighted_70_30"],
@@ -311,6 +361,7 @@ def main():
     summary_fields = [
         "image", "view", "candidate_count", "current_3pp", "center_first",
         "weighted_70_30", "center_with_confidence_floor", "strategies_disagree",
+        "max_pairwise_iou", "highest_iou_pair",
     ]
 
     with candidate_path.open("w", newline="", encoding="utf-8-sig") as handle:
