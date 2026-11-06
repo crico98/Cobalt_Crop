@@ -161,7 +161,7 @@ def edit_one(image_path, image_root, manifest, manifest_path, number, total):
 
     # Old v2 boxes targeted the diamond face in both views. They are not
     # valid for the new full-cutter Top / diamond-table Isometric targets.
-    if record.get("target_version") != 2:
+    if record.get("view") == "top" and record.get("target_version") != 2:
         boxes = []
     editor = Editor(image, boxes, record.get("view", ""))
     window = f"{WINDOW_PREFIX} - {image_path.name}"
@@ -275,7 +275,9 @@ def export_datasets(image_root, output_root, manifest, manifest_path, val_fracti
     for key, annotation in manifest["annotations"].items():
         view = annotation.get("view")
         # Never train on legacy face-only annotations under the new targets.
-        if annotation.get("target_version") != 2:
+        if view == "top" and annotation.get("target_version") != 2:
+            continue
+        if view == "isometric" and annotation.get("target_version") not in (None, 1, 2):
             continue
         boxes = annotation.get("boxes")
         if boxes is None:
