@@ -74,8 +74,8 @@ Top and Isometric are separate one-class datasets. The annotation manifest store
 
 ## Training and acceptance sequence
 
-1. Re-annotate Top images using the complete-cutter target.
-2. Re-annotate Isometric images using the diamond-table target.
+1. Re-annotate Top images using the complete-cutter target; the exporter deliberately excludes legacy Top boxes.
+2. Review existing Isometric diamond-face boxes to confirm they tightly represent the visible diamond table; redraw only inconsistent examples.
 3. Review samples from each view for consistent target boundaries before exporting.
 4. Export separate datasets and audit every image/label pair, normalized box, class ID, and train/validation split.
 5. Train Top and Isometric independently using documented pretrained YOLO detection checkpoints. Record model version, dataset revision, image size, epochs, and metrics.
