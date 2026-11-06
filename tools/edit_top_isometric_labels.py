@@ -212,7 +212,7 @@ def edit_one(image_path, image_root, manifest, manifest_path, number, total):
                     print("Finish drawing the box before saving.")
                     continue
                 if not editor.saved_boxes:
-                    print("No diamond-face box to save. Press N to skip this image.")
+                    print("No target box to save. Press N to skip this image.")
                     continue
                 if editor.view not in {"top", "isometric"}:
                     print("Assign this image with T (Top) or I (Isometric) before saving.")
@@ -347,7 +347,7 @@ def export_datasets(image_root, output_root, manifest, manifest_path, val_fracti
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Draw diamond-face bounding boxes and export separate Top/Isometric YOLO detection datasets."
+        description="Draw view-specific full-cutter/diamond-table boxes and export separate Top/Isometric YOLO detection datasets."
     )
     parser.add_argument("--images", type=Path, default=DEFAULT_IMAGE_DIR)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_DIR)
