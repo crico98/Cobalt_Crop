@@ -99,9 +99,24 @@ def image_index():
             "width": width,
             "height": height,
             "view": record.get("view", ""),
-            "boxes": boxes if record.get("target_version") == 2 else [],
-            "target_current": not record.get("view") or record.get("target_version") == 2,
-            "annotated": bool(record.get("view") in {"top", "isometric"} and record.get("target_version") == 2 and boxes),
+            "boxes": boxes if (
+                not record.get("view")
+                or (record.get("view") == "top" and record.get("target_version") == 2)
+                or (record.get("view") == "isometric" and record.get("target_version") in (None, 1, 2))
+            ) else [],
+            "target_current": (
+                not record.get("view")
+                or (record.get("view") == "top" and record.get("target_version") == 2)
+                or (record.get("view") == "isometric" and record.get("target_version") in (None, 1, 2))
+            ),
+            "annotated": bool(
+                record.get("view") in {"top", "isometric"}
+                and boxes
+                and (
+                    (record.get("view") == "top" and record.get("target_version") == 2)
+                    or (record.get("view") == "isometric" and record.get("target_version") in (None, 1, 2))
+                )
+            ),
         })
     return jsonify({"images": results})
 
