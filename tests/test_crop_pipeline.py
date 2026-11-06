@@ -1,3 +1,5 @@
+import json
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -10,6 +12,7 @@ from crop_pipeline import (
     crop_square,
     detection_region,
     map_box_to_full_image,
+    load_manifest_records,
     normalize_manifest_records,
     resolve_angle,
     square_crop_geometry,
@@ -52,6 +55,17 @@ class AngleResolutionTests(unittest.TestCase):
                 ("face", "x_angle_2_c.jpg"),
             ],
         )
+
+    def test_json_manifest_adapter_uses_file_path_records(self):
+        records = [
+            {"file_path": "batch_angle_2_face.jpg"},
+            {"file_path": "batch_angle_0_iso.jpg"},
+        ]
+        with tempfile.TemporaryDirectory() as folder:
+            manifest_path = Path(folder) / "fixture.json"
+            manifest_path.write_text(json.dumps(records), encoding="utf-8")
+            items = load_manifest_records(manifest_path)
+        self.assertEqual([item.view for item in items], ["isometric", "face"])
 
     def test_missing_file_path_fails(self):
         with self.assertRaises(ValueError):
