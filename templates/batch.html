@@ -3,16 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cutter Face Cropper — Batch</title>
+<title>View-specific Cutter Cropper — Batch</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 <main class="shell wide">
 <a class="back" href="{{ url_for('index') }}">← Upload another batch</a>
-<h1>Cutter Face Cropper</h1>
-<p class="sub">Review each EXIF-normalized working image, adjust the centered detection region, rotate further only if needed, and process the batch.</p>
+<h1>View-specific Cutter Cropper</h1>
+<p class="sub">Images are grouped from the angle token in each filename and processed in production order: Isometric → Top → Face. Image orientation does not determine the view.</p>
 
 <form method="post" action="{{ url_for('autocrop_batch', batch_id=batch_id) }}" class="batch-action">
+  <h2>Face detection-region controls</h2>
   <div class="crop-controls">
     <fieldset class="crop-preset">
       <legend>Landscape working image (width ≥ height)</legend>
@@ -25,8 +26,8 @@
       <div class="crop-control"><label for="portrait_height">Detection height: <output id="portrait_height_value">{{ portrait_height }}%</output></label><input id="portrait_height" name="portrait_height" type="range" min="25" max="100" step="1" value="{{ portrait_height }}"></div>
     </fieldset>
   </div>
-  <p class="muted">The green rectangle shows exactly which centered region the Face model will receive. These sliders set the original region sizes; the preview and processing apply the agreed expansion automatically: images without manual rotation expand 5% in width and height, while manually rotated images keep the same width and expand 20% in height. The final square crop is still taken from the full, manually oriented image.</p>
-  <button class="primary" type="submit">Auto Crop / Center Batch ({{ total }} images)</button>
+  <p class="muted">These controls affect Face only. Top and Isometric use the six fixed view/orientation settings shown on each image card. The green rectangle shows the model input region.</p>
+  <button class="primary" type="submit">Run view-specific crop pipeline ({{ total }} images)</button>
 </form>
 
 {% if completed %}<p><a class="download" href="{{ url_for('download_batch', batch_id=batch_id) }}">Download all successful crops (.zip)</a></p>{% endif %}
@@ -36,14 +37,15 @@
 <article class="item-card">
   <div class="item-heading">
     <h2>{{ loop.index }}. {{ item.filename }}</h2>
+    <span class="status pending">{{ item.view|title }} · angle_{{ item.angle_id }}</span>
     {% if item.crop %}<span class="status success">Cropped</span>{% elif item.error %}<span class="status failure">Needs attention</span>{% else %}<span class="status pending">Not processed</span>{% endif %}
   </div>
   <div class="item-columns">
     <div>
       <h3>Working image</h3>
       <div class="image-frame">
-        <img class="preview working-preview" data-manual-rotation="{{ item.rotation }}" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
-        <div class="crop-guide" data-crop-guide aria-hidden="true"><span>Model sees this area</span></div>
+        <img class="preview working-preview" data-view="{{ item.view }}" data-manual-rotation="{{ item.rotation }}" data-region-width="{{ item.preview_region_width }}" data-region-height="{{ item.preview_region_height }}" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='working') }}?v={{ item.rotation }}" alt="Working image">
+        <div class="crop-guide" data-crop-guide aria-hidden="true"><span>Model input region</span></div>
       </div>
       <div class="actions">
         <form method="post" action="{{ url_for('rotate', batch_id=batch_id, job_id=item.id, direction='left') }}"><button class="secondary">↶ Rotate left</button></form>
@@ -51,24 +53,33 @@
       </div>
       <p class="muted">Manual rotation: {{ item.rotation }}°</p>
       <p class="muted">Source EXIF orientation: {{ item.source_exif_orientation }} (applied on upload)</p>
+      <p class="muted">Detection region: {{ item.preview_region_width }}% width × {{ item.preview_region_height }}% height</p>
     </div>
     <div>
-      <h3>Centered crop</h3>
+      <h3>Output crop</h3>
       {% if item.crop %}
-        <img class="preview crop" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='crop') }}?v={{ item.rotation }}" alt="Centered crop">
-        <dl>
-          <dt>Detection region</dt><dd>{{ item.face.region_width }}% width × {{ item.face.region_height }}% height</dd>
-          <dt>Confidence</dt><dd>{{ item.face.confidence }}</dd>
-          <dt>Face center (px)</dt><dd>{{ item.face.center }}</dd>
-          <dt>Estimated radius (px)</dt><dd>{{ item.face.radius }}</dd>
-          <dt>Geometry reconstructed</dt><dd>{{ "Yes" if item.face.reconstructed else "No" }}</dd>
-        </dl>
-        {% if item.face.review %}<p class="notice warn">Review recommended. Check this crop visually.</p>{% else %}<p class="notice good">No model review flags raised. Still verify visually.</p>{% endif %}
+        <img class="preview crop" src="{{ url_for('image_file', batch_id=batch_id, job_id=item.id, kind='crop') }}?v={{ item.rotation }}" alt="Output crop">
+        {% if item.view == "face" %}
+          <dl>
+            <dt>Confidence</dt><dd>{{ item.face.confidence }}</dd>
+            <dt>Face center (px)</dt><dd>{{ item.face.center }}</dd>
+            <dt>Estimated radius (px)</dt><dd>{{ item.face.radius }}</dd>
+            <dt>Geometry reconstructed</dt><dd>{{ "Yes" if item.face.reconstructed else "No" }}</dd>
+          </dl>
+          {% if item.face.review %}<p class="notice warn">Review recommended. Check this crop visually.</p>{% else %}<p class="notice good">No model review flags raised. Still verify visually.</p>{% endif %}
+        {% else %}
+          <dl>
+            <dt>Target confidence</dt><dd>{{ item.detection.confidence }}</dd>
+            <dt>Target box (px)</dt><dd>{{ item.detection.box }}</dd>
+            <dt>Crop framing</dt><dd>{{ (item.detection.target_coverage * 100)|round|int }}% target coverage (provisional)</dd>
+          </dl>
+          <p class="notice warn">Provisional framing — visually review Top/Isometric crops before accepting final margins.</p>
+        {% endif %}
         <a class="download" href="{{ url_for('download_one', batch_id=batch_id, job_id=item.id) }}">Download this crop</a>
       {% elif item.error %}
         <p class="notice bad">{{ item.error }}</p>
       {% else %}
-        <div class="empty small">Crop will appear here after batch processing.</div>
+        <div class="empty small">Crop will appear here after processing.</div>
       {% endif %}
     </div>
   </div>
@@ -76,7 +87,7 @@
 {% endfor %}
 </section>
 
-<p class="muted">Square crops use the V2 model's 87.5% face-coverage target and pad beyond image edges. Images are processed sequentially on the CPU. EXIF is applied once during upload; any additional manual rotation is preserved. No deskew is applied.</p>
+<p class="muted">Face continues to use the existing V2 segmentation-to-circle crop behavior. Top detects the full visible cutter; Isometric detects the diamond table. Top/Isometric crops are square, preserve aspect ratio, and pad beyond source edges. Their current coverage factors are preview defaults, not production-approved settings.</p>
 </main>
 <script>
 (() => {
@@ -91,12 +102,16 @@
       const image = frame.querySelector(".working-preview");
       const guide = frame.querySelector("[data-crop-guide]");
       if (!image || !guide || !image.naturalWidth || !image.naturalHeight) return;
-      const landscape = image.naturalWidth >= image.naturalHeight;
-      const baseWidth = Number(document.getElementById(landscape ? "landscape_width" : "portrait_width").value);
-      const baseHeight = Number(document.getElementById(landscape ? "landscape_height" : "portrait_height").value);
-      const manuallyRotated = Number(image.dataset.manualRotation || 0) % 360 !== 0;
-      const width = Math.min(100, Math.round(baseWidth * (manuallyRotated ? 1 : 1.05)));
-      const height = Math.min(100, Math.round(baseHeight * (manuallyRotated ? 1.20 : 1.05)));
+      let width = Number(image.dataset.regionWidth);
+      let height = Number(image.dataset.regionHeight);
+      if (image.dataset.view === "face") {
+        const landscape = image.naturalWidth >= image.naturalHeight;
+        const baseWidth = Number(document.getElementById(landscape ? "landscape_width" : "portrait_width").value);
+        const baseHeight = Number(document.getElementById(landscape ? "landscape_height" : "portrait_height").value);
+        const manuallyRotated = Number(image.dataset.manualRotation || 0) % 360 !== 0;
+        width = Math.min(100, Math.round(baseWidth * (manuallyRotated ? 1 : 1.05)));
+        height = Math.min(100, Math.round(baseHeight * (manuallyRotated ? 1.20 : 1.05)));
+      }
       guide.style.width = width + "%";
       guide.style.height = height + "%";
       const label = guide.querySelector("span");
