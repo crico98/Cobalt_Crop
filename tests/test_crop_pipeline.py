@@ -22,6 +22,12 @@ class AngleResolutionTests(unittest.TestCase):
         self.assertEqual(resolve_angle("batch_123_angle_1_photo.jpg"), ("1", "top", 1))
         self.assertEqual(resolve_angle("batch_123_angle_2_photo.jpg"), ("2", "face", 2))
 
+    def test_windows_path_is_parsed_from_filename(self):
+        self.assertEqual(
+            resolve_angle(r"C:\\batch\\capture_angle_0_photo.jpg"),
+            ("0", "isometric", 0),
+        )
+
     def test_missing_unsupported_and_ambiguous_angles_fail(self):
         for name in ("photo.jpg", "photo_angle_3.jpg", "angle_0_angle_2.jpg"):
             with self.subTest(name=name), self.assertRaises(ValueError):
@@ -77,7 +83,7 @@ class GeometryTests(unittest.TestCase):
         image = Image.new("RGB", (100, 80), (255, 0, 0))
         box = square_crop_geometry(image.size, (0, 10, 30, 40), 0.75)
         crop = crop_square(image, box, output_size=120)
-        self.assertEqual(crop.size, (120, 120))
+        self.assertEqual(crop.size, (120, 120))\n        self.assertEqual(crop.getpixel((0, 60)), (24, 24, 24))\n        self.assertEqual(crop.getpixel((60, 60)), (255, 0, 0))
 
     def test_invalid_crop_boxes_rejected(self):
         with self.assertRaises(ValueError):
