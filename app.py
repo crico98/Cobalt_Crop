@@ -8,6 +8,7 @@ from pathlib import Path
 
 from flask import Flask, abort, redirect, render_template, request, send_file, url_for
 from PIL import Image
+from image_orientation import normalize_uploaded_image, read_exif_orientation
 from werkzeug.utils import secure_filename
 
 from face_model import FaceFinder
@@ -42,7 +43,7 @@ def item_dir(batch_id: str, job_id: str) -> Path:
 
 
 def load_rgb(path: Path) -> Image.Image:
-    # Deliberately do NOT apply ImageOps.exif_transpose: orientation is user-controlled.
+    """Load a working image; EXIF was normalized exactly once during upload."""
     with Image.open(path) as source:
         return source.convert("RGB")
 
@@ -134,8 +135,9 @@ def upload():
             one_dir.mkdir()
             try:
                 with Image.open(file.stream) as source:
-                    # Preserve the uploaded pixel orientation; no EXIF auto-rotation.
-                    save_rgb(source.convert("RGB"), one_dir / "working.png")
+                    source_exif_orientation = read_exif_orientation(source)
+                    normalized = normalize_uploaded_image(source)
+                    save_rgb(normalized, one_dir / "working.png")
             except Exception as exc:
                 raise ValueError(f"Could not read {original_name} as an image.") from exc
 
@@ -143,6 +145,7 @@ def upload():
                 "id": job_id,
                 "filename": original_name,
                 "output_name": output_stem,
+                "source_exif_orientation": source_exif_orientation,
                 "rotation": 0,
                 "crop": False,
                 "face": None,
