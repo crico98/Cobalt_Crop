@@ -98,7 +98,7 @@ class GeometryTests(unittest.TestCase):
         )
         result = SimpleNamespace(boxes=boxes)
         self.assertEqual(
-            choose_detection(result, (100, 100)),
+            choose_detection(result),
             {"box": (5.0, 6.0, 30.0, 40.0), "confidence": 0.9},
         )
 
