@@ -39,6 +39,7 @@ MODEL_PATHS = {
     "top": ROOT / "models" / "top_view" / "weights" / "best.pt",
     "isometric": ROOT / "models" / "isometric_view" / "weights" / "best.pt",
 }
+EXPECTED_CLASS_NAMES = {"top": "full_cutter", "isometric": "diamond_table"}
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
@@ -80,7 +81,17 @@ def load_object_detector(view: str):
                 f"{view.title()} detector checkpoint not found: {model_path}"
             )
         from ultralytics import YOLO
-        object_detectors[view] = YOLO(str(model_path))
+        detector = YOLO(str(model_path))
+        if getattr(detector, "task", "detect") != "detect":
+            raise ValueError(f"{view.title()} checkpoint must be a YOLO object-detection model.")
+        names = getattr(detector, "names", {})
+        class_zero = names.get(0) if isinstance(names, dict) else (names[0] if names else None)
+        if class_zero != EXPECTED_CLASS_NAMES[view]:
+            raise ValueError(
+                f"{view.title()} checkpoint class 0 must be "
+                f"{EXPECTED_CLASS_NAMES[view]!r}; found {class_zero!r}."
+            )
+        object_detectors[view] = detector
     return object_detectors[view]
 
 
