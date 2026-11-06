@@ -3,7 +3,7 @@
 <title>Cutter Face Cropper</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
 <body><main class="shell">
 <h1>Cutter Face Cropper</h1>
-<p class="sub">Upload a group of cutter photos, manually correct any orientations, then crop and center the entire batch.</p>
+<p class="sub">Upload cutter photos. EXIF orientation is corrected automatically; make any remaining manual corrections before cropping.</p>
 {% if not model_available %}<p class="notice bad">Model checkpoint not found. Confirm the models/ path.</p>{% endif %}
 {% if error %}<p class="notice bad">{{ error }}</p>{% endif %}
 <form class="upload" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
