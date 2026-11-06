@@ -7,8 +7,8 @@ from pathlib import Path
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
 
-DEFAULT_ISOMETRIC = Path(r"C:\\PDC_Training\\training\\isometric\\images\\train")
-DEFAULT_TOP = Path(r"C:\\PDC_Training\\training\\top\\images\\train")
+DEFAULT_ISOMETRIC = Path(r"C:\PDC_Training\training\isometric\images\train")
+DEFAULT_TOP = Path(r"C:\PDC_Training\training\top\images\train")
 DEFAULT_OUTPUT = Path("work/crop_test_batch")
 
 VIEWS = (
@@ -75,7 +75,7 @@ def prepare_batch(
 
         manifest_path = output / "manifest.json"
         manifest_path.write_text(
-            json.dumps(records, indent=2) + "\\n",
+            json.dumps(records, indent=2) + "\n",
             encoding="utf-8",
         )
         summary = {
@@ -85,7 +85,7 @@ def prepare_batch(
             "total": len(records),
         }
         (output / "batch_summary.json").write_text(
-            json.dumps(summary, indent=2) + "\\n",
+            json.dumps(summary, indent=2) + "\n",
             encoding="utf-8",
         )
         return summary
