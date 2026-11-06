@@ -332,7 +332,7 @@ def process_object_item(batch_id: str, item: dict, image: Image.Image) -> None:
     model_image, offset = centered_detection_image(image, region_width, region_height)
     detector = load_object_detector(view)
     results = detector.predict(source=model_image, verbose=False)
-    selected = choose_detection(results[0], model_image.size)
+    selected = choose_detection(results[0])
     if selected is None:
         item["error"] = (
             f"No {VIEW_LABELS[view]} target detected in the centered "
