@@ -37,7 +37,7 @@ PROVISIONAL_CROP_COVERAGE = {
     "isometric": 0.65,
 }
 OUTPUT_SIZE = 1200
-_ANGLE_PATTERN = re.compile(r"(?:^|[^A-Za-z0-9])angle_([0-9]+)(?:$|[^A-Za-z0-9])", re.IGNORECASE)
+_ANGLE_PATTERN = re.compile(r"(?:^|[^A-Za-z0-9])angle_([A-Za-z0-9]+)(?:$|[^A-Za-z0-9])", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -56,6 +56,8 @@ def resolve_angle(file_path: str | Path) -> tuple[str, str, int]:
         reason = "missing" if not matches else "ambiguous"
         raise ValueError(f"{reason.title()} angle identifier in filename: {name}")
     angle_id = matches[0].group(1)
+    if not angle_id.isdigit():
+        raise ValueError(f"Malformed angle identifier angle_{angle_id} in filename: {name}")
     if angle_id not in ANGLE_VIEWS:
         raise ValueError(f"Unsupported angle identifier angle_{angle_id} in filename: {name}")
     view, order = ANGLE_VIEWS[angle_id]
