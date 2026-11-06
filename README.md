@@ -17,13 +17,13 @@ Cropper StandAlone is a development and validation harness for the crop-processi
 
 ## Model and detection-region configuration
 
-| View | Model target | Checkpoint | Landscape region | Portrait region |
+| View | Model target | Checkpoint | Landscape base region | Portrait base region |
 |---|---|---|---:|---:|
 | Isometric | Diamond table | `models/isometric_view/weights/best.pt` | 55% × 80% | 65% × 55% |
 | Top | Full visible cutter | `models/top_view/weights/best.pt` | 50% × 68% | 63% × 62% |
 | Face | Cutter-face segmentation | Existing Face V2 checkpoint | 55% × 80% | 60% × 45% |
 
-The Face path retains its existing V2 segmentation-to-circle geometry, crop framing, review flags, and interactive detection-region behavior. Top and Isometric use independent Ultralytics object detectors and translate detections from the centered model-input region back into full working-image coordinates.
+The Face path retains its existing V2 segmentation-to-circle geometry, crop framing, review flags, and interactive detection-region behavior; its existing adjustment to the base slider values remains in effect. Top and Isometric use the exact fixed regions above, independent Ultralytics object detectors, and translate detections from the centered model-input region back into full working-image coordinates.
 
 Top and Isometric outputs are square, 1200 × 1200 presentation crops. They preserve aspect ratio and pad beyond source-image edges rather than stretching the cutter. The current preview coverage factors are **provisional only**: Top 0.80 and Isometric 0.65. They are exposed in `crop_pipeline.py` and must be visually reviewed against representative images before being treated as production framing values.
 
