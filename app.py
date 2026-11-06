@@ -128,6 +128,8 @@ def too_large(_error):
     return render_template(
         "index.html",
         model_available=finder.available,
+        top_model_available=MODEL_PATHS['top'].is_file(),
+        isometric_model_available=MODEL_PATHS['isometric'].is_file(),
         max_upload_mb=MAX_UPLOAD_MB,
         max_files=MAX_FILES_PER_BATCH,
         error=f"The combined upload exceeds the current {MAX_UPLOAD_MB} MB limit.",
