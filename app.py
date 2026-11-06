@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 from crop_pipeline import (
     OUTPUT_SIZE,
     PROVISIONAL_CROP_COVERAGE,
+    VIEW_LABELS,
     choose_detection,
     centered_detection_image,
     crop_square,
