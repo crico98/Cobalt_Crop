@@ -72,6 +72,16 @@ def padded_square_crop(image: Image.Image, face: dict, max_size: int = 1200):
     return canvas, (left, top, right, bottom)
 
 
+def adjusted_detection_region(width: int, height: int, manually_rotated: bool) -> tuple[int, int]:
+    """Expand the centered model-input region without changing any annotations."""
+    if manually_rotated:
+        return width, min(100, int(round(height * 1.20)))
+    return (
+        min(100, int(round(width * 1.05))),
+        min(100, int(round(height * 1.05))),
+    )
+
+
 def require_batch(batch_id: str) -> dict:
     batch = batches.get(batch_id)
     if batch is None:
@@ -222,14 +232,21 @@ def autocrop_batch(batch_id):
             image = load_rgb(item_dir(batch_id, job_id) / "working.png")
             # Choose settings from the actual saved working image after manual rotation.
             is_landscape = image.width >= image.height
-            region_width = settings["landscape_width" if is_landscape else "portrait_width"]
-            region_height = settings["landscape_height" if is_landscape else "portrait_height"]
+            base_width = settings["landscape_width" if is_landscape else "portrait_width"]
+            base_height = settings["landscape_height" if is_landscape else "portrait_height"]
+            manually_rotated = bool(item["rotation"] % 360)
+            region_width, region_height = adjusted_detection_region(
+                base_width, base_height, manually_rotated
+            )
             orientation_name = "landscape" if is_landscape else "portrait"
+            rotation_note = "manual-rotation expansion" if manually_rotated else "standard expansion"
 
             print(
                 f"\n[Face detector] {item['filename']} | "
                 f"working image={image.width}x{image.height} ({orientation_name}) | "
-                f"region={region_width}%W x {region_height}%H",
+                f"base={base_width}%W x {base_height}%H | "
+                f"effective region={region_width}%W x {region_height}%H "
+                f"({rotation_note})",
                 flush=True,
             )
 
@@ -249,7 +266,7 @@ def autocrop_batch(batch_id):
             if face is None:
                 item["error"] = (
                     f"No cutter face detected in the centered {region_width}% "
-                    f"width × {region_height}% height region ({orientation_name}). "
+                    f"width × {region_height}% height region ({orientation_name}, {rotation_note}). "
                     "Try adjusting the region or adding representative training images."
                 )
                 print(f"[Face detector] NO DETECTION: {item['filename']}", flush=True)
