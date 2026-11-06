@@ -14,56 +14,47 @@ from crop_pipeline import (
     map_box_to_full_image,
     load_manifest_records,
     normalize_manifest_records,
-    resolve_angle,
+    resolve_angle_index,
     square_crop_geometry,
 )
 
 
 class AngleResolutionTests(unittest.TestCase):
-    def test_filename_angle_mapping(self):
-        self.assertEqual(resolve_angle("batch_123_angle_0_photo.jpg"), ("0", "isometric", 0))
-        self.assertEqual(resolve_angle("batch_123_angle_1_photo.jpg"), ("1", "top", 1))
-        self.assertEqual(resolve_angle("batch_123_angle_2_photo.jpg"), ("2", "face", 2))
+    def test_explicit_angle_index_mapping(self):
+        self.assertEqual(resolve_angle_index(0), ("0", "isometric", 0))
+        self.assertEqual(resolve_angle_index(1), ("1", "top", 1))
+        self.assertEqual(resolve_angle_index(2), ("2", "face", 2))
+        self.assertEqual(resolve_angle_index("1"), ("1", "top", 1))
 
-    def test_windows_path_is_parsed_from_filename(self):
-        self.assertEqual(
-            resolve_angle(r"C:\batch\capture_angle_0_photo.jpg"),
-            ("0", "isometric", 0),
-        )
+    def test_invalid_angle_index_values_fail(self):
+        for value in (None, True, 1.5, "top", -1, 3, "03"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                resolve_angle_index(value)
 
-    def test_missing_unsupported_and_ambiguous_angles_fail(self):
-        for name in ("photo.jpg", "photo_angle_3.jpg", "angle_0_angle_2.jpg"):
-            with self.subTest(name=name), self.assertRaises(ValueError):
-                resolve_angle(name)
-        with self.assertRaisesRegex(ValueError, "Unsupported angle identifier"):
-            resolve_angle("photo_angle_3.jpg")
-        with self.assertRaisesRegex(ValueError, "Malformed angle identifier"):
-            resolve_angle("photo_angle_bad.jpg")
-
-    def test_manifest_groups_views_and_preserves_order_within_group(self):
+    def test_manifest_groups_by_angle_index_and_preserves_order(self):
         records = [
-            {"file_path": "x_angle_2_c.jpg"},
-            {"file_path": "x_angle_1_a.jpg"},
-            {"file_path": "x_angle_0_a.jpg"},
-            {"file_path": "x_angle_1_b.jpg"},
-            {"file_path": "x_angle_0_b.jpg"},
+            {"file_path": "photo_c.jpg", "angle_index": 2},
+            {"file_path": "photo_a.jpg", "angle_index": 1},
+            {"file_path": "photo_d.jpg", "angle_index": 0},
+            {"file_path": "photo_b.jpg", "angle_index": 1},
+            {"file_path": "photo_e.jpg", "angle_index": 0},
         ]
         items = normalize_manifest_records(records)
         self.assertEqual(
             [(item.view, Path(item.file_path).name) for item in items],
             [
-                ("isometric", "x_angle_0_a.jpg"),
-                ("isometric", "x_angle_0_b.jpg"),
-                ("top", "x_angle_1_a.jpg"),
-                ("top", "x_angle_1_b.jpg"),
-                ("face", "x_angle_2_c.jpg"),
+                ("isometric", "photo_d.jpg"),
+                ("isometric", "photo_e.jpg"),
+                ("top", "photo_a.jpg"),
+                ("top", "photo_b.jpg"),
+                ("face", "photo_c.jpg"),
             ],
         )
 
-    def test_json_manifest_adapter_uses_file_path_records(self):
+    def test_json_manifest_adapter_reads_angle_index_records(self):
         records = [
-            {"file_path": "batch_angle_2_face.jpg"},
-            {"file_path": "batch_angle_0_iso.jpg"},
+            {"file_path": "batch_face.jpg", "angle_index": 2},
+            {"file_path": "batch_iso.jpg", "angle_index": 0},
         ]
         with tempfile.TemporaryDirectory() as folder:
             manifest_path = Path(folder) / "fixture.json"
@@ -71,9 +62,19 @@ class AngleResolutionTests(unittest.TestCase):
             items = load_manifest_records(manifest_path)
         self.assertEqual([item.view for item in items], ["isometric", "face"])
 
-    def test_missing_file_path_fails(self):
-        with self.assertRaises(ValueError):
-            normalize_manifest_records([{}])
+    def test_manifest_requires_file_path_and_angle_index(self):
+        with self.assertRaisesRegex(ValueError, "file_path"):
+            normalize_manifest_records([{"angle_index": 0}])
+        with self.assertRaisesRegex(ValueError, "angle_index"):
+            normalize_manifest_records([{"file_path": "photo.jpg"}])
+
+    def test_manifest_rejects_duplicate_photo_names(self):
+        records = [
+            {"file_path": "folder_a/photo.jpg", "angle_index": 0},
+            {"file_path": "folder_b/photo.jpg", "angle_index": 1},
+        ]
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            normalize_manifest_records(records)
 
 
 class GeometryTests(unittest.TestCase):
