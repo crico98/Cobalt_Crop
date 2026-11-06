@@ -18,7 +18,7 @@ from tools.edit_top_isometric_labels import (
 ROOT = Path(__file__).resolve().parent
 IMAGE_ROOT = ROOT / "dataset" / "train" / "images"
 MANIFEST_PATH = ROOT / "dataset" / "top_isometric_annotations.json"
-OUTPUT_ROOT = ROOT / "training"
+OUTPUT_ROOT = ROOT / "training_presentation"
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
 top_isometric = Blueprint("top_isometric", __name__)
