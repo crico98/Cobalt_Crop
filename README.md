@@ -1,58 +1,60 @@
-# Cutter Cropper — standalone batch prototype
+# Cropper StandAlone — view-specific crop pipeline prototype
 
-Separate Flask app for manually oriented cutter photos and V2 YOLO face cropping. It does not modify or import the existing Gradio or Plotly Dash applications.
+Cropper StandAlone is a development and validation harness for the crop-processing tool intended for eventual use inside BitHub. It is not a separate end-user product. This branch validates view routing, independent model inference, detection regions, and output crop geometry before any BitHub integration work.
 
-## Features
-- Upload multiple cutter photos in one batch.
-- Rotate each photo manually by 90 degrees before processing.
-- Process all photos sequentially with one **Auto Crop / Center Batch** action.
-- Review each result and confidence/review indicators.
-- Download successful crops individually or together as a ZIP.
-- EXIF orientation is applied once during upload; additional manual 90-degree rotation remains available. No orientation classifier or deskew.
-- Square crop target uses approximately 87.5% face coverage and pads beyond image edges.
+## Current batch workflow
 
-## Configurable combined upload limit
+1. Select a mixed batch of cutter images. Each filename must contain exactly one delimited angle token: `angle_0`, `angle_1`, or `angle_2`.
+2. The filename token determines the view; image orientation never determines the view:
+   - `angle_0` → Isometric
+   - `angle_1` → Top
+   - `angle_2` → Face
+3. Upload validation rejects missing, unsupported, or ambiguous angle tokens before saving the batch.
+4. The batch is stably grouped and processed Isometric first, Top second, and Face last. Original order is retained within each group.
+5. EXIF orientation is applied once during upload. Additional manual 90-degree rotation remains available as a correction.
+6. Each view uses its own inference path. A missing detector checkpoint is reported for that view; no image is silently routed to another model.
+7. Review each output. Successful crops can be downloaded individually or as a ZIP.
 
-Default combined request limit: **50000 MB**. Change it before starting the app with `CROPPER_MAX_UPLOAD_MB`.
+## Model and detection-region configuration
 
-PowerShell:
+| View | Model target | Checkpoint | Landscape region | Portrait region |
+|---|---|---|---:|---:|
+| Isometric | Diamond table | `models/isometric_view/weights/best.pt` | 55% × 80% | 65% × 55% |
+| Top | Full visible cutter | `models/top_view/weights/best.pt` | 50% × 68% | 63% × 62% |
+| Face | Cutter-face segmentation | Existing Face V2 checkpoint | 55% × 80% | 60% × 45% |
+
+The Face path retains its existing V2 segmentation-to-circle geometry, crop framing, review flags, and interactive detection-region behavior. Top and Isometric use independent Ultralytics object detectors and translate detections from the centered model-input region back into full working-image coordinates.
+
+Top and Isometric outputs are square, 1200 × 1200 presentation crops. They preserve aspect ratio and pad beyond source-image edges rather than stretching the cutter. The current preview coverage factors are **provisional only**: Top 0.80 and Isometric 0.65. They are exposed in `crop_pipeline.py` and must be visually reviewed against representative images before being treated as production framing values.
+
+## Model files
+
+The Top and Isometric checkpoint directories are intentionally excluded by `.gitignore` because trained model binaries are local artifacts. Restore or train these files locally before inference:
+- `models/top_view/weights/best.pt`
+- `models/isometric_view/weights/best.pt`
+
+The upload page reports checkpoint readiness. A missing checkpoint does not trigger fallback to Face or the other view's detector.
+
+## Running locally
+
+Activate the project's virtual environment and install dependencies while preserving the locally installed PyTorch build:
 ```powershell
-$env:CROPPER_MAX_UPLOAD_MB = "750"
+python -m pip install -r requirements.txt
 python app.py
 ```
 
-This is the total request size for all selected files plus multipart overhead, not a per-image limit. Default maximum is 50 images per batch; change it with `CROPPER_MAX_FILES`:
+Open http://127.0.0.1:5000.
+
+Combined upload size defaults to 50000 MB and can be changed with `CROPPER_MAX_UPLOAD_MB`. The default maximum batch size is 500 images and can be changed with `CROPPER_MAX_FILES`.
+
+## Automated checks
+
+Run the crop-pipeline unit tests:
 ```powershell
-$env:CROPPER_MAX_FILES = "100"
+python -m unittest discover -s tests
 ```
 
-## Run on Windows
-Activate the virtual environment, navigate to this project folder, and run:
-```powershell
-python app.py
-```
-Open http://127.0.0.1:5000
-
-Install requirements with `python -m pip install -r requirements.txt`. Preserve the CPU PyTorch build already installed for Intel integrated graphics.
-
-## Orientation-aware center detection regions
-
-The batch page has separate adjustable width/height settings for each working-image orientation:
-- Landscape (width >= height): default **40% width × 70% height**.
-- Portrait (height > width): default **80% width × 55% height**.
-
-EXIF orientation is normalized during upload. Landscape/portrait is determined from the normalized working image after any additional manual 90-degree rotation. Each image in a mixed-orientation batch receives the matching settings. The preview rectangle updates per image, and the model receives only that centered rectangle. Detection coordinates are translated back to the full manually oriented image before the final square crop is made.
-
-## Batch workflow
-1. Select multiple JPG/PNG/WEBP/BMP/TIFF images.
-2. Upload the batch; EXIF orientation is applied automatically once.
-3. Rotate an image manually only if its orientation still needs correction after EXIF normalization.
-4. Adjust the landscape and portrait width/height settings if needed, then click **Auto Crop / Center Batch**.
-5. Review each result. A failed detection on one image does not stop the others.
-6. Re-run with adjusted detection regions to compare, then download successful crops individually or as one ZIP.
-
-See [TRAINING_PLAN.md](TRAINING_PLAN.md) for the independent Top and Isometric diamond-face detection models.
-
+These tests cover filename routing, invalid/missing/ambiguous angle identifiers, stable group order, all six view/orientation detection-region combinations, coordinate translation, square crop geometry, and confidence-based detector selection. They do not replace inference tests with the locally stored trained checkpoints or visual crop acceptance.
 
 ## EXIF orientation and Top / Isometric training preparation
 
