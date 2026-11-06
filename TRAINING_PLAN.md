@@ -55,7 +55,7 @@ The detection box is a locator, not itself the final image crop.
 ## Dataset structure
 
 ```text
-training/
+training_presentation/
   top/
     images/train/
     images/val/
