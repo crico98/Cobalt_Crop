@@ -9,8 +9,8 @@
 <body>
 <main class="shell wide annotation-shell">
   <a class="back" href="{{ url_for('index') }}">← Back to Cutter Face Cropper</a>
-  <h1>Top / Isometric Diamond Face Annotation</h1>
-  <p class="sub">Drag on the image to box each visible diamond face. Exclude the carbide body and pocket. Assign the image view, then save.</p>
+  <h1>Top / Isometric Cutter Annotation</h1>
+  <p class="sub">Assign the view first. Top: box the entire visible cutter, including all carbide and the diamond table. Isometric: box the visible diamond table; exclude the surrounding carbide body and pocket.</p>
 
   <div class="annotation-toolbar">
     <div class="annotation-nav">
@@ -41,7 +41,7 @@
       <div class="annotation-card">
         <h2>Current image</h2>
         <p id="view-status" class="annotation-status">View not assigned</p>
-        <p><strong id="box-count">0</strong> diamond-face box(es)</p>
+        <p><strong id="box-count">0</strong> target box(es)</p>
         <div class="annotation-actions">
           <button id="delete-box" class="secondary" type="button" disabled>Delete selected box</button>
           <button id="clear-boxes" class="secondary" type="button">Clear all boxes</button>
@@ -58,11 +58,11 @@
       <div class="annotation-card">
         <h2>Guidance</h2>
         <ul class="annotation-guidance">
-          <li>Box the visible diamond face tightly.</li>
-          <li>Do not include carbide body or pocket.</li>
-          <li>Multiple visible faces can be boxed in one image.</li>
-          <li>Wear, chips, and spalling are acceptable if the face is locatable.</li>
-          <li>Skip faces that are broken, obscured, or too unclear to locate.</li>
+          <li><strong>Top:</strong> box the complete visible cutter, from the outer carbide edge through the diamond table. Keep the full cutter inside the box.</li>
+          <li><strong>Isometric:</strong> box the diamond table only. Exclude the carbide body and pocket.</li>
+          <li>Box each clearly visible target if multiple cutters appear in one image.</li>
+          <li>Include worn, chipped, or spalled targets when their boundaries remain locatable.</li>
+          <li>Skip targets that are broken, obscured, cut off, or too unclear to locate reliably.</li>
         </ul>
       </div>
     </aside>
