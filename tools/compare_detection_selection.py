@@ -354,9 +354,11 @@ def main():
 
     candidate_fields = [
         "image", "view", "candidate", "confidence", "center_distance",
-        "edge_margin_px", "weighted_score_70_30", "selected_current_3pp",
-        "selected_center_first", "selected_weighted_70_30",
-        "selected_center_with_confidence_floor",
+        "edge_margin_px", "weighted_score_70_30",
+        "box_x1", "box_y1", "box_x2", "box_y2", "max_pairwise_iou",
+        "iou_C1", "iou_C2", "iou_C3", "iou_C4",
+        "selected_current_3pp", "selected_center_first",
+        "selected_weighted_70_30", "selected_center_with_confidence_floor",
     ]
     summary_fields = [
         "image", "view", "candidate_count", "current_3pp", "center_first",
