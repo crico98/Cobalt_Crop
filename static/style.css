@@ -96,3 +96,6 @@ dl{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:14px}dt{co
   .annotation-stage{min-height:240px}
   .annotation-image-frame,.annotation-image-frame img{max-height:55vh}
 }
+
+/* The .empty display:grid rule must not override the HTML hidden attribute. */
+.annotation-stage .empty[hidden]{display:none}
