@@ -101,7 +101,9 @@ class GeometryTests(unittest.TestCase):
         image = Image.new("RGB", (100, 80), (255, 0, 0))
         box = square_crop_geometry(image.size, (0, 10, 30, 40), 0.75)
         crop = crop_square(image, box, output_size=120)
-        self.assertEqual(crop.size, (120, 120))\n        self.assertEqual(crop.getpixel((0, 60)), (24, 24, 24))\n        self.assertEqual(crop.getpixel((60, 60)), (255, 0, 0))
+        self.assertEqual(crop.size, (120, 120))
+        self.assertEqual(crop.getpixel((0, 60)), (24, 24, 24))
+        self.assertEqual(crop.getpixel((60, 60)), (255, 0, 0))
 
     def test_invalid_crop_boxes_rejected(self):
         with self.assertRaises(ValueError):
