@@ -28,8 +28,10 @@
     <section class="annotation-image-panel">
       <div id="image-stage" class="annotation-stage">
         <div id="empty-state" class="empty">Loading the image set…</div>
-        <img id="source-image" alt="Cutter image for annotation" hidden>
-        <canvas id="box-canvas" hidden></canvas>
+        <div id="image-frame" class="annotation-image-frame">
+          <img id="source-image" alt="Cutter image for annotation" hidden>
+          <canvas id="box-canvas" hidden></canvas>
+        </div>
       </div>
       <p id="image-name" class="muted annotation-filename"></p>
       <p class="muted">Drag to create a box. Drag inside an existing box to move it. Select a box and use Delete to remove only that box.</p>
