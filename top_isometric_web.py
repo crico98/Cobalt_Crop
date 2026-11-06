@@ -100,7 +100,7 @@ def image_index():
             "height": height,
             "view": record.get("view", ""),
             "boxes": boxes if record.get("target_version") == 2 else [],
-            "target_current": record.get("target_version") == 2,
+            "target_current": not record.get("view") or record.get("target_version") == 2,
             "annotated": bool(record.get("view") in {"top", "isometric"} and record.get("target_version") == 2 and boxes),
         })
     return jsonify({"images": results})
