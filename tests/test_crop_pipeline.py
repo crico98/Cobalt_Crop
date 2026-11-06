@@ -24,7 +24,7 @@ class AngleResolutionTests(unittest.TestCase):
 
     def test_windows_path_is_parsed_from_filename(self):
         self.assertEqual(
-            resolve_angle(r"C:\\batch\\capture_angle_0_photo.jpg"),
+            resolve_angle(r"C:\batch\capture_angle_0_photo.jpg"),
             ("0", "isometric", 0),
         )
 
