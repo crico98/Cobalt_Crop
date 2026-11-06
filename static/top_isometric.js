@@ -156,6 +156,7 @@
     item.view = state.boxes.length ? state.view : "";
     item.boxes = state.boxes.map(b => b.slice());
     item.annotated = state.boxes.length > 0;
+    item.target_current = true;
     state.dirty = false;
     $("position").textContent = `${state.index + 1} / ${state.images.length} · ${state.images.filter(x => x.annotated).length} annotated`;
     setStatus("Saved to dataset/top_isometric_annotations.json.");
