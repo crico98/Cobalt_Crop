@@ -26,7 +26,7 @@ def relative_key(path: Path, root: Path) -> str:
 
 def load_manifest(path: Path) -> dict:
     if not path.exists():
-        return {"version": 2, "annotations": {}}
+        return {"version": 3, "annotations": {}}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -159,6 +159,10 @@ def edit_one(image_path, image_root, manifest, manifest_path, number, total):
         if boxes:
             print("Converted older polygon annotation(s) to enclosing bounding box(es).")
 
+    # Old v2 boxes targeted the diamond face in both views. They are not
+    # valid for the new full-cutter Top / diamond-table Isometric targets.
+    if record.get("target_version") != 2:
+        boxes = []
     editor = Editor(image, boxes, record.get("view", ""))
     window = f"{WINDOW_PREFIX} - {image_path.name}"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
@@ -215,7 +219,7 @@ def edit_one(image_path, image_root, manifest, manifest_path, number, total):
                     continue
                 manifest["annotations"][key] = {
                     "view": editor.view,
-                    "boxes": editor.saved_boxes,
+                    "boxes": editor.saved_boxes,\n                    "target_version": 2,
                 }
                 save_manifest(manifest_path, manifest)
                 print(f"Saved {len(editor.saved_boxes)} box(es): {key} ({editor.view})")
@@ -269,6 +273,9 @@ def export_datasets(image_root, output_root, manifest, manifest_path, val_fracti
     records, missing = [], []
     for key, annotation in manifest["annotations"].items():
         view = annotation.get("view")
+        # Never train on legacy face-only annotations under the new targets.
+        if annotation.get("target_version") != 2:
+            continue
         boxes = annotation.get("boxes")
         if boxes is None:
             boxes = legacy_polygons_to_boxes(annotation.get("polygons", []))
