@@ -65,7 +65,10 @@ def editor():
 def image_index():
     if not IMAGE_ROOT.is_dir():
         return jsonify({"images": [], "error": f"Image folder not found: {IMAGE_ROOT}"})
-    images = collect_images(IMAGE_ROOT)
+    try:
+        images = collect_images(IMAGE_ROOT)
+    except FileNotFoundError as exc:
+        return jsonify({"images": [], "error": str(exc)})
     manifest = load_manifest(MANIFEST_PATH)
     results = []
     for path in images:
