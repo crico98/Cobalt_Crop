@@ -1,0 +1,14 @@
+[
+  {
+    "file_path": "REPLACE_WITH_ISOMETRIC_PHOTO_FILENAME.jpg",
+    "angle_index": 0
+  },
+  {
+    "file_path": "REPLACE_WITH_TOP_PHOTO_FILENAME.jpg",
+    "angle_index": 1
+  },
+  {
+    "file_path": "REPLACE_WITH_FACE_PHOTO_FILENAME.jpg",
+    "angle_index": 2
+  }
+]
