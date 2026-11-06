@@ -37,7 +37,8 @@
     $("delete-box").disabled = state.selected < 0;
   }
   function pointerPosition(event) {
-    const rect = canvas.getBoundingClientRect();
+    // Normalize pointer coordinates against the displayed image, not the outer stage.
+    const rect = image.getBoundingClientRect();
     return [
       Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
       Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height))
