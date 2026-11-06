@@ -18,7 +18,7 @@ class ExifNormalizationTests(unittest.TestCase):
         # Re-open encoded bytes so Pillow reads the EXIF block as file metadata.
         import io
         stream = io.BytesIO()
-        image.save(stream, format="JPEG", quality=100, subsampling=0, exif=exif)
+        image.save(stream, format="PNG", exif=exif)
         stream.seek(0)
         return Image.open(stream)
 
