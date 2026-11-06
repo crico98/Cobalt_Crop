@@ -6,7 +6,11 @@ __pycache__/
 # Local, proprietary annotation inputs and generated training outputs.
 dataset/train/images/
 dataset/top_isometric_annotations.json
+dataset/training_rotation_manifest.json
 training_presentation/
 training_presentation_exif_normalized/
-dataset/training_rotation_manifest.json
+models/top_view/
+models/isometric_view/
+yolo11n.pt
+.dataset/training_rotation_manifest.json
 .vscode/
