@@ -6,12 +6,13 @@ Validate the production crop-processing behavior in Cropper StandAlone before im
 
 ## Production input and processing contract
 
-- BitHub supplies a JSON manifest for each uploaded batch. The manifest records image paths (`file_path`); the image filename contains its angle identifier.
-- Resolve each image's view from the angle identifier in its filename/path metadata, not from image orientation and not from a user-selected per-image view.
+- BitHub supplies a JSON manifest for each uploaded batch. The known source field is `file_path`; the view assignment is carried separately in `angle_index`.
+- StandAlone creates/uses the same explicit mapping in its own JSON manifest. Each record contains the photo filename/path in `file_path` and its numeric `angle_index`. The filename is used only to match the uploaded image; it is not expected to contain an angle token or EXIF angle metadata.
 - Required mapping and processing order:
-  1. `angle_0` → Isometric — process every image in this group first.
-  2. `angle_1` → Top — process every image in this group second.
-  3. `angle_2` → Face — process every image in this group last.
+  1. `angle_index: 0` → Isometric — process every image in this group first.
+  2. `angle_index: 1` → Top — process every image in this group second.
+  3. `angle_index: 2` → Face — process every image in this group last.
+- The actual BitHub JSON envelope is unavailable, so the StandAlone adapter uses a documented JSON array of records with the known `file_path` and `angle_index` fields. Only the adapter should need adjustment if the external envelope differs.
 - Preserve the incoming order of images within each angle group unless BitHub's manifest defines a more specific ordering requirement.
 - Validate angle identifiers before inference. Missing, malformed, or unsupported identifiers must be reported as input errors; never silently guess a view or route an image to a default model.
 - Keep the batch's source paths and angle metadata attached to each processing item so outputs can be traced back to their source records.
@@ -21,10 +22,10 @@ Validate the production crop-processing behavior in Cropper StandAlone before im
 
 The following pipeline components are implemented:
 
-- Filename angle resolver for exactly one delimited `angle_0`, `angle_1`, or `angle_2` token.
-- Strict rejection of missing, unsupported, and ambiguous identifiers.
-- Stable Isometric → Top → Face grouping, preserving upload order within each group.
-- Direct-upload harness uses the same filename resolver and routing rules. A small adapter accepts synthetic JSON record arrays containing the known `file_path` field for contract tests; the real BitHub manifest envelope is not available in this project and is not guessed.
+- Explicit `angle_index` resolver for values 0, 1, and 2.
+- Strict rejection of missing, malformed, unsupported, duplicate, or unmatched manifest/photo records.
+- Stable Isometric → Top → Face grouping, preserving manifest order within each group.
+- Direct-upload harness requires a JSON array of `{file_path, angle_index}` records and matches each record to an uploaded photo by filename. No view is inferred from filename, EXIF, image pixels, or upload position.
 - Independent lazy-loaded Top and Isometric YOLO detectors, plus the unchanged Face V2 path.
 - Six view/orientation detection-region settings, centered region extraction, and translation of detector boxes back to full working-image coordinates.
 - Square Top/Isometric output geometry, fixed 1200-pixel output, aspect-ratio preservation, and edge padding.
@@ -76,7 +77,7 @@ Apply the selected region to the normalized working image based on the resolved 
 
 ## Implementation sequence
 
-1. Implement and test the production angle-metadata resolver and stable group ordering.
+1. Implement and test the explicit `angle_index` metadata resolver and stable group ordering.
 2. Add per-view inference adapters and load only the checkpoint associated with the resolved view.
 3. Add view-aware detection-region selection using the six settings above.
 4. Map predicted boxes from detection-region coordinates back to normalized working-image coordinates.
