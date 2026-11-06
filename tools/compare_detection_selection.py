@@ -4,6 +4,13 @@ import argparse
 import csv
 import json
 from pathlib import Path
+import sys
+
+# Running this file directly puts tools/ on sys.path, but the shared pipeline
+# modules live one directory above it in the project root.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
@@ -16,7 +23,6 @@ from crop_pipeline import (
 from image_orientation import normalize_uploaded_image
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BATCH_DIR = PROJECT_ROOT / "work" / "crop_test_batch"
 DEFAULT_OUTPUT = PROJECT_ROOT / "work" / "diagnostics" / "selection_comparison"
 WEIGHT_CENTER = 0.70
