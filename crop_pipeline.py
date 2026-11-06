@@ -163,19 +163,57 @@ def crop_square(image: Image.Image, box: tuple[int, int, int, int], output_size:
     return canvas
 
 
+DETECTION_CONFIDENCE_TOLERANCE = 0.03
+
+
 def choose_detection(result):
-    """Select the most confident valid detector box; return box and confidence."""
+    """Select by confidence, using image-center proximity within 3 points."""
     boxes = getattr(result, "boxes", None)
     if boxes is None or len(boxes) == 0:
         return None
+
     candidates = []
     for index, raw_box in enumerate(boxes.xyxy.tolist()):
         x1, y1, x2, y2 = map(float, raw_box)
         if x2 <= x1 or y2 <= y1:
             continue
         confidence = float(boxes.conf[index].item())
-        candidates.append((confidence, (x1, y1, x2, y2)))
+        candidates.append({
+            "confidence": confidence,
+            "box": (x1, y1, x2, y2),
+        })
+
     if not candidates:
         return None
-    confidence, box = max(candidates, key=lambda item: item[0])
-    return {"box": box, "confidence": confidence}
+
+    highest_confidence = max(item["confidence"] for item in candidates)
+    tied_candidates = [
+        item for item in candidates
+        if highest_confidence - item["confidence"] <= DETECTION_CONFIDENCE_TOLERANCE
+    ]
+
+    # Ultralytics Results exposes the dimensions of the detector input image.
+    # If unavailable, preserve the previous confidence-only behavior.
+    original_shape = getattr(result, "orig_shape", None)
+    if original_shape and len(original_shape) >= 2 and len(tied_candidates) > 1:
+        image_height, image_width = map(float, original_shape[:2])
+        center_x, center_y = image_width / 2.0, image_height / 2.0
+
+        def selection_key(item):
+            x1, y1, x2, y2 = item["box"]
+            box_center_x = (x1 + x2) / 2.0
+            box_center_y = (y1 + y2) / 2.0
+            distance_squared = (
+                (box_center_x - center_x) ** 2
+                + (box_center_y - center_y) ** 2
+            )
+            return distance_squared, -item["confidence"]
+
+        selected = min(tied_candidates, key=selection_key)
+    else:
+        selected = max(tied_candidates, key=lambda item: item["confidence"])
+
+    return {
+        "box": selected["box"],
+        "confidence": selected["confidence"],
+    }
