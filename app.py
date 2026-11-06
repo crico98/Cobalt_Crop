@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import os
 import shutil
 import uuid
@@ -20,7 +21,7 @@ from crop_pipeline import (
     crop_square,
     detection_region,
     map_box_to_full_image,
-    resolve_angle,
+    normalize_manifest_records,
     square_crop_geometry,
 )
 from image_orientation import normalize_uploaded_image, read_exif_orientation
@@ -168,21 +169,47 @@ def upload():
     if len(files) > MAX_FILES_PER_BATCH:
         abort(400, f"Too many images. Maximum per batch: {MAX_FILES_PER_BATCH}.")
 
-    # Validate every angle before writing any image. The filename, not aspect
-    # ratio or upload position, determines the model. Sorting is stable within
-    # each group: angle_0, then angle_1, then angle_2.
-    prepared = []
-    for original_index, file in enumerate(files):
+    manifest_file = request.files.get("manifest")
+    if manifest_file is None or not manifest_file.filename:
+        abort(400, "Upload the JSON manifest that pairs each photo filename with angle_index.")
+    try:
+        manifest_payload = json.loads(manifest_file.read().decode("utf-8-sig"))
+        manifest_items = normalize_manifest_records(manifest_payload)
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
+        abort(400, f"Invalid JSON manifest: {exc}")
+
+    # Match by photo basename. The manifest's angle_index is authoritative;
+    # filenames, EXIF metadata, and upload position never determine the view.
+    uploaded_by_name = {}
+    for file in files:
         original_name = secure_filename(file.filename) or "cutter_image"
+        key = original_name.casefold()
+        if key in uploaded_by_name:
+            abort(400, f"Duplicate uploaded photo filename: {original_name}")
         suffix = Path(original_name).suffix.lower()
         if suffix not in ALLOWED:
             abort(400, f"Unsupported image type: {original_name}")
-        try:
-            angle_id, view, order = resolve_angle(original_name)
-        except ValueError as exc:
-            abort(400, str(exc))
-        prepared.append((order, original_index, file, original_name, angle_id, view))
-    prepared.sort(key=lambda entry: (entry[0], entry[1]))
+        uploaded_by_name[key] = (file, original_name)
+
+    prepared = []
+    matched_names = set()
+    for manifest_item in manifest_items:
+        photo_name = Path(manifest_item.file_path.replace("\\\\", "/")).name
+        key = secure_filename(photo_name).casefold()
+        if key not in uploaded_by_name:
+            abort(400, f"Manifest photo was not included in this upload: {photo_name}")
+        if key in matched_names:
+            abort(400, f"Manifest maps the same uploaded photo more than once: {photo_name}")
+        matched_names.add(key)
+        file, original_name = uploaded_by_name[key]
+        prepared.append((
+            manifest_item.order, len(prepared), file, original_name,
+            manifest_item.angle_id, manifest_item.view,
+        ))
+
+    unmatched = sorted(set(uploaded_by_name) - matched_names)
+    if unmatched:
+        abort(400, "Uploaded photos missing from JSON manifest: " + ", ".join(unmatched))
 
     batch_id = uuid.uuid4().hex
     folder = batch_dir(batch_id)
