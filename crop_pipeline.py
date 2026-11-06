@@ -50,7 +50,7 @@ class BatchItem:
 
 def resolve_angle(file_path: str | Path) -> tuple[str, str, int]:
     """Return (angle_id, view, processing_order); reject ambiguous filenames."""
-    name = Path(str(file_path).replace("\\\\", "/")).name
+    name = Path(str(file_path).replace("\\", "/")).name
     matches = list(_ANGLE_PATTERN.finditer(name))
     if len(matches) != 1:
         reason = "missing" if not matches else "ambiguous"
