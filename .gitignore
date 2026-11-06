@@ -7,4 +7,6 @@ __pycache__/
 dataset/train/images/
 dataset/top_isometric_annotations.json
 training_presentation/
+training_presentation_exif_normalized/
+dataset/training_rotation_manifest.json
 .vscode/
