@@ -35,6 +35,8 @@ class AngleResolutionTests(unittest.TestCase):
         for name in ("photo.jpg", "photo_angle_3.jpg", "angle_0_angle_2.jpg"):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 resolve_angle(name)
+        with self.assertRaisesRegex(ValueError, "Unsupported angle identifier"):
+            resolve_angle("photo_angle_3.jpg")
 
     def test_manifest_groups_views_and_preserves_order_within_group(self):
         records = [
