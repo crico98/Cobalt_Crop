@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from ultralytics import YOLO
 
 from crop_pipeline import (
+    OUTPUT_SIZE,
     PROVISIONAL_CROP_COVERAGE,
     centered_detection_image,
     crop_square,
