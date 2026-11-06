@@ -72,6 +72,20 @@ training_presentation/
 
 Top and Isometric are separate one-class datasets. The annotation manifest stores normalized boxes against the original source images. The exporter must preserve the view-specific class names in each dataset YAML. Split by physical cutter/sample or acquisition session when possible—not random near-duplicate frames—to reduce leakage.
 
+## Orientation-normalized training dataset
+
+The app normalizes EXIF orientation once during upload and then treats the resulting pixels as the working-image coordinate system. For training, create a separate derived dataset from the current `training_presentation/` export. Do not overwrite the original annotation manifest or baseline export.
+
+The preparation tool requires an explicit per-image `manual_rotation_degrees` value (0, 90, 180, or 270 clockwise) describing any additional rotation needed **after EXIF normalization**. EXIF values are not a substitute for this classification. The tool physically applies EXIF and declared manual rotations to image pixels, applies the same transform to the YOLO boxes, and writes PNGs without orientation metadata.
+
+Derived box expansion:
+- No additional manual rotation: 1.05× width and 1.05× height (5% total expansion in each dimension).
+- Additional manual rotation: 1.00× width and 1.20× height (10% of original height on each side).
+
+Expansion remains centered on the original box and is symmetrically limited at image edges. The derived output is `training_presentation_exif_normalized/`; keep it separate from the original `training_presentation/` baseline. Visually inspect representative and edge-limited boxes before training.
+
+Training entry point: `python -m tools.train_top_isometric --view all`. Defaults: pretrained `yolo11n.pt`, 1024 image size, 100 epochs, batch 4, patience 25, GPU 0, and Windows-friendly workers=0. Top and Isometric are trained independently; outputs are stored under `models/top_view/` and `models/isometric_view/`.
+
 ## Training and acceptance sequence
 
 1. Re-annotate Top images using the complete-cutter target; the exporter deliberately excludes legacy Top boxes.
