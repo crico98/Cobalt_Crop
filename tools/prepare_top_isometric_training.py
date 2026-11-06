@@ -5,7 +5,6 @@ import hashlib
 import json
 import re
 import shutil
-from collections import Counter
 from pathlib import Path
 
 from PIL import Image, ImageOps
@@ -56,6 +55,10 @@ def rotate_box(box: tuple[float, float, float, float], degrees: int):
     if degrees == 270:
         return y1, 1.0 - x2, y2, 1.0 - x1
     raise ValueError(f"Unsupported clockwise rotation: {degrees}")
+
+
+def is_exif_quarter_turn(orientation: int) -> bool:
+    return orientation in {5, 6, 7, 8}
 
 
 def expand_box(box: tuple[float, float, float, float], rotated: bool):
@@ -150,7 +153,7 @@ def prepare_dataset(source_root: Path, output_root: Path, annotations_path: Path
                 image = ImageOps.exif_transpose(source_image).convert("RGB")
             # EXIF is the source of truth for the rotated-image expansion group.
             # Normalize pixels once; do not rotate the already-oriented labels again.
-            exif_rotated = exif_orientation in {5, 6, 7, 8}
+            exif_rotated = is_exif_quarter_turn(exif_orientation)
             summary["exif_orientation_counts"][str(exif_orientation)] = (
                 summary["exif_orientation_counts"].get(str(exif_orientation), 0) + 1
             )
