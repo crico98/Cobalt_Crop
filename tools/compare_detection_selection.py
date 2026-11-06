@@ -125,7 +125,7 @@ def analyze_candidates(result, image_size, region_size, confidence_floor):
 def save_disagreement_overlay(image, offset, region_size, candidates, image_name, output_dir):
     selections = candidates[0]["selections"] if candidates else {}
     selected_values = set(value for value in selections.values() if value is not None)
-    if len(selected_values) <= 1:
+    if len(set(selections.values())) <= 1:
         return None
 
     overlay = image.copy().convert("RGB")
