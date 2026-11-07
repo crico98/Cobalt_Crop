@@ -29,12 +29,45 @@ The following pipeline components are implemented:
 - Independent lazy-loaded Top and Isometric YOLO detectors, plus the unchanged Face V2 path.
 - Six view/orientation detection-region settings, centered region extraction, and translation of detector boxes back to full working-image coordinates.
 - Square Top/Isometric output geometry, fixed 1200-pixel output, aspect-ratio preservation, and edge padding.
+- Top/Isometric permissive candidate inference and confidence-weighted box fusion, with unchanged single-member clusters and existing no-detection behavior.
 - Batch preview labels the view, angle, model input region, detector confidence, and provisional crop framing.
-- Unit tests cover routing, stable ordering, invalid inputs, all six region settings, coordinate mapping, square crop geometry, and detection selection.
+- Unit tests cover routing, stable ordering, invalid inputs, all six region settings, coordinate mapping, square crop geometry, detection selection, and WBF fusion behavior.
 
 The Top and Isometric model directories are excluded by `.gitignore`; their locally trained `best.pt` files must be present on the workstation for inference. The application reports missing checkpoints and does not substitute another view's model.
 
 **Crop framing is not yet production-approved.** Current preview defaults are Top target coverage 0.80 and Isometric target coverage 0.65. These are deliberately marked provisional in the UI and code. They must be visually reviewed and adjusted against representative real crops before the merge gate can pass.
+
+## Top/Isometric detection fusion
+
+Top and Isometric production inference now uses the validated single-model,
+confidence-weighted box-fusion path in `crop_pipeline.py`.
+
+- Run the detector with `BOX_FUSION_CANDIDATE_IOU = 0.99` to retain overlapping
+  candidates that normal NMS would otherwise suppress at its usual threshold.
+- Cluster candidates using `BOX_FUSION_CLUSTER_IOU = 0.60`.
+- Fuse coordinates within each overlapping cluster using confidence-weighted
+  averages; the fused cluster confidence is the mean member confidence.
+- A single-member cluster is returned unchanged. Multiple non-overlapping
+  detections remain separate; they are never averaged together.
+- Select among resulting clusters using the established 3-percentage-point
+  confidence band, then detector-input center proximity, then confidence.
+- If no candidates are returned, preserve the existing no-crop/error behavior.
+- Face segmentation and its crop path are unchanged.
+- Record whether fusion occurred, the source-candidate count, and source IDs
+  in the per-image detection metadata.
+
+### Full-batch validation record
+
+The user-reviewed comparison covered 106 images: 70 Isometric and 36 Top.
+The comparison CSV contains one result per method (baseline, NMS, WBF) for
+each image. WBF produced a selected crop for 102 images; the other four Top
+images had no detections in any of the three methods and therefore retain the
+existing no-crop behavior. Every selected WBF cluster in the successful
+images combined multiple candidates (3–20 source boxes). The user visually
+reviewed the WBF outputs and confirmed that they looked better than both
+baseline and NMS. This supports integrating the validated WBF approach into
+the StandAlone Top/Isometric crop path; it does not change the provisional
+target-coverage settings or authorize BitHub migration.
 
 ## Existing model baseline
 
