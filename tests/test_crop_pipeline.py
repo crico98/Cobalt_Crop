@@ -77,6 +77,73 @@ class AngleResolutionTests(unittest.TestCase):
             normalize_manifest_records(records)
 
 
+
+class DetectionFusionTests(unittest.TestCase):
+    class FakeBoxes:
+        def __init__(self, boxes, confidences):
+            self.xyxy = SimpleNamespace(tolist=lambda: boxes)
+            self.conf = [
+                SimpleNamespace(item=lambda value=value: value)
+                for value in confidences
+            ]
+
+        def __len__(self):
+            return len(self.conf)
+
+    @classmethod
+    def result(cls, boxes, confidences, shape=(200, 200)):
+        return SimpleNamespace(
+            boxes=cls.FakeBoxes(boxes, confidences),
+            orig_shape=shape,
+        )
+
+    def test_single_candidate_is_returned_without_fusion(self):
+        from crop_pipeline import choose_fused_detection
+
+        box = (20.0, 30.0, 120.0, 130.0)
+        selected = choose_fused_detection(
+            self.result([list(box)], [0.87])
+        )
+        self.assertEqual(selected["box"], box)
+        self.assertEqual(selected["confidence"], 0.87)
+        self.assertFalse(selected["fusion_applied"])
+        self.assertEqual(selected["fusion_source_count"], 1)
+        self.assertEqual(selected["fusion_members"], ("C1",))
+
+    def test_overlapping_candidates_are_confidence_weighted(self):
+        from crop_pipeline import choose_fused_detection
+
+        selected = choose_fused_detection(
+            self.result(
+                [[0, 0, 100, 100], [10, 0, 110, 100]],
+                [0.8, 0.4],
+            )
+        )
+        self.assertTrue(selected["fusion_applied"])
+        self.assertEqual(selected["fusion_source_count"], 2)
+        self.assertAlmostEqual(selected["box"][0], 10.0 / 3.0)
+        self.assertAlmostEqual(selected["box"][2], 310.0 / 3.0)
+        self.assertAlmostEqual(selected["confidence"], 0.6)
+
+    def test_non_overlapping_candidates_are_not_fused(self):
+        from crop_pipeline import choose_fused_detection
+
+        selected = choose_fused_detection(
+            self.result(
+                [[0, 0, 50, 50], [140, 140, 190, 190]],
+                [0.9, 0.7],
+            )
+        )
+        self.assertEqual(selected["box"], (0.0, 0.0, 50.0, 50.0))
+        self.assertFalse(selected["fusion_applied"])
+        self.assertEqual(selected["fusion_source_count"], 1)
+
+    def test_no_candidates_returns_none(self):
+        from crop_pipeline import choose_fused_detection
+
+        self.assertIsNone(choose_fused_detection(self.result([], [])))
+
+
 class GeometryTests(unittest.TestCase):
     def test_all_six_detection_region_settings(self):
         landscape = Image.new("RGB", (1600, 900))
