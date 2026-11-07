@@ -16,7 +16,8 @@ from crop_pipeline import (
     OUTPUT_SIZE,
     PROVISIONAL_CROP_COVERAGE,
     VIEW_LABELS,
-    choose_detection,
+    BOX_FUSION_CANDIDATE_IOU,
+    choose_fused_detection,
     centered_detection_image,
     crop_square,
     detection_region,
@@ -369,8 +370,14 @@ def process_object_item(batch_id: str, item: dict, image: Image.Image) -> None:
     region_width, region_height = detection_region(view, image)
     model_image, offset = centered_detection_image(image, region_width, region_height)
     detector = load_object_detector(view)
-    results = detector.predict(source=model_image, verbose=False)
-    selected = choose_detection(results[0])
+    # Preserve overlapping candidates before standard NMS can suppress them.
+    # WBF then combines only overlapping boxes for the same crop target.
+    results = detector.predict(
+        source=model_image,
+        verbose=False,
+        iou=BOX_FUSION_CANDIDATE_IOU,
+    )
+    selected = choose_fused_detection(results[0])
     if selected is None:
         item["error"] = (
             f"No {VIEW_LABELS[view]} target detected in the centered "
@@ -392,6 +399,9 @@ def process_object_item(batch_id: str, item: dict, image: Image.Image) -> None:
         "center": [round((x1 + x2) / 2.0, 1), round((y1 + y2) / 2.0, 1)],
         "crop_box": crop_box,
         "target_coverage": coverage,
+        "fusion_applied": bool(selected.get("fusion_applied", False)),
+        "fusion_source_count": int(selected.get("fusion_source_count", 1)),
+        "fusion_members": list(selected.get("fusion_members", ())),
         "provisional": True,
     }
 
@@ -426,7 +436,12 @@ def autocrop_batch(batch_id):
             if item["crop"]:
                 print(
                     f"[{item['view'].title()} detector] CROPPED {item['filename']} "
-                    f"| confidence={item['face']['confidence'] if item['face'] else item['detection']['confidence']}",
+                    f"| confidence={item['face']['confidence'] if item['face'] else item['detection']['confidence']}"
+                    + (
+                        f" | WBF sources={item['detection']['fusion_source_count']}"
+                        if item['detection'] and item['detection'].get('fusion_applied')
+                        else ""
+                    ),
                     flush=True,
                 )
             else:
