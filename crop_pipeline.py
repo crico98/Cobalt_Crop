@@ -217,3 +217,155 @@ def choose_detection(result):
         "box": selected["box"],
         "confidence": selected["confidence"],
     }
+
+
+# The permissive inference pass retains overlapping candidates that the normal
+# detector NMS pass would otherwise suppress before crop localization.
+BOX_FUSION_CANDIDATE_IOU = 0.99
+BOX_FUSION_CLUSTER_IOU = 0.60
+
+
+def _box_iou(a, b) -> float:
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    intersection_width = max(0.0, min(ax2, bx2) - max(ax1, bx1))
+    intersection_height = max(0.0, min(ay2, by2) - max(ay1, by1))
+    intersection = intersection_width * intersection_height
+    area_a = max(0.0, ax2 - ax1) * max(0.0, ay2 - ay1)
+    area_b = max(0.0, bx2 - bx1) * max(0.0, by2 - by1)
+    union = area_a + area_b - intersection
+    return intersection / union if union > 0 else 0.0
+
+
+def _confidence_weighted_box(members: list[dict]) -> tuple[float, float, float, float]:
+    weights = [max(0.0, float(item["confidence"])) for item in members]
+    total_weight = sum(weights)
+    if total_weight <= 0:
+        weights = [1.0] * len(members)
+        total_weight = float(len(members))
+    return tuple(
+        sum(float(item["box"][axis]) * weight for item, weight in zip(members, weights))
+        / total_weight
+        for axis in range(4)
+    )
+
+
+def fuse_detection_candidates(
+    candidates: list[dict],
+    iou_threshold: float = BOX_FUSION_CLUSTER_IOU,
+) -> list[dict]:
+    """Greedily cluster overlapping detections and confidence-weight their boxes.
+
+    Single-member clusters are retained unchanged. This means unrelated
+    detections are not averaged together and a one-candidate input needs no
+    coordinate fusion.
+    """
+    if not 0.0 < iou_threshold <= 1.0:
+        raise ValueError("iou_threshold must be greater than 0 and at most 1.")
+    ordered = sorted(candidates, key=lambda item: float(item["confidence"]), reverse=True)
+    clusters = []
+    for candidate in ordered:
+        best_cluster = None
+        best_overlap = 0.0
+        for cluster in clusters:
+            overlap = _box_iou(candidate["box"], cluster["box"])
+            if overlap >= iou_threshold and overlap > best_overlap:
+                best_cluster, best_overlap = cluster, overlap
+        if best_cluster is None:
+            clusters.append({"members": [candidate], "box": candidate["box"]})
+        else:
+            best_cluster["members"].append(candidate)
+            best_cluster["box"] = _confidence_weighted_box(best_cluster["members"])
+
+    fused = []
+    for index, cluster in enumerate(clusters, start=1):
+        members = cluster["members"]
+        fused.append({
+            "candidate": f"F{index}",
+            "box": _confidence_weighted_box(members),
+            "confidence": sum(float(item["confidence"]) for item in members) / len(members),
+            "member_count": len(members),
+            "members": tuple(item["candidate"] for item in members),
+        })
+    return fused
+
+
+def _choose_candidate(candidates: list[dict], image_size: tuple[int, int] | None):
+    """Apply the established 3-point confidence band and center-distance tie-break."""
+    if not candidates:
+        return None
+    highest_confidence = max(float(item["confidence"]) for item in candidates)
+    tied = [
+        item for item in candidates
+        if highest_confidence - float(item["confidence"]) <= DETECTION_CONFIDENCE_TOLERANCE
+    ]
+    if image_size and len(tied) > 1:
+        image_width, image_height = map(float, image_size)
+        center_x, center_y = image_width / 2.0, image_height / 2.0
+
+        def selection_key(item):
+            x1, y1, x2, y2 = item["box"]
+            box_center_x = (float(x1) + float(x2)) / 2.0
+            box_center_y = (float(y1) + float(y2)) / 2.0
+            distance_squared = (
+                (box_center_x - center_x) ** 2
+                + (box_center_y - center_y) ** 2
+            )
+            return distance_squared, -float(item["confidence"])
+
+        return min(tied, key=selection_key)
+    return max(tied, key=lambda item: float(item["confidence"]))
+
+
+def choose_fused_detection(result):
+    """Select a crop target from a permissive candidate pass using WBF-style fusion.
+
+    The model must be run with BOX_FUSION_CANDIDATE_IOU so overlapping candidates
+    remain available. A single candidate is returned unchanged. Multiple
+    candidates are clustered at BOX_FUSION_CLUSTER_IOU; only members of the
+    same overlapping cluster contribute to a fused box. No detections returns
+    None, preserving the app's existing no-crop behavior.
+    """
+    boxes = getattr(result, "boxes", None)
+    if boxes is None or len(boxes) == 0:
+        return None
+
+    candidates = []
+    for index, raw_box in enumerate(boxes.xyxy.tolist()):
+        x1, y1, x2, y2 = map(float, raw_box)
+        if x2 <= x1 or y2 <= y1:
+            continue
+        candidates.append({
+            "candidate": f"C{len(candidates) + 1}",
+            "confidence": float(boxes.conf[index].item()),
+            "box": (x1, y1, x2, y2),
+        })
+    if not candidates:
+        return None
+
+    if len(candidates) == 1:
+        selected = candidates[0]
+        return {
+            "box": selected["box"],
+            "confidence": selected["confidence"],
+            "fusion_applied": False,
+            "fusion_source_count": 1,
+            "fusion_members": (selected["candidate"],),
+        }
+
+    fused_candidates = fuse_detection_candidates(candidates)
+    original_shape = getattr(result, "orig_shape", None)
+    image_size = None
+    if original_shape and len(original_shape) >= 2:
+        image_height, image_width = original_shape[:2]
+        image_size = (int(image_width), int(image_height))
+    selected = _choose_candidate(fused_candidates, image_size)
+    if selected is None:
+        return None
+    return {
+        "box": selected["box"],
+        "confidence": selected["confidence"],
+        "fusion_applied": selected["member_count"] > 1,
+        "fusion_source_count": selected["member_count"],
+        "fusion_members": selected["members"],
+    }
