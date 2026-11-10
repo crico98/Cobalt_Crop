@@ -32,7 +32,7 @@ DETECTION_REGIONS = {
 # Provisional preview framing only. These values are intentionally not a
 # production acceptance decision; review representative crops before locking.
 PROVISIONAL_CROP_COVERAGE = {
-    "top": 0.80,
+    "top": 0.70,
     "isometric": 0.65,
 }
 OUTPUT_SIZE = 1200
