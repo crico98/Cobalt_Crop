@@ -35,7 +35,7 @@ The following pipeline components are implemented:
 
 The Top and Isometric model directories are excluded by `.gitignore`; their locally trained `best.pt` files must be present on the workstation for inference. The application reports missing checkpoints and does not substitute another view's model.
 
-**Crop framing is not yet production-approved.** Current preview defaults are Top target coverage 0.70 and Isometric target coverage 0.65. The Top value was lowered from 0.80 to 0.70 for a direct same-image framing comparison after the initial Top runtime crop clipped part of the cutter. This is a calibration experiment only; it remains provisional until representative Top crops are visually reviewed and accepted. These are deliberately marked provisional in the UI and code. They must be visually reviewed and adjusted against representative real crops before the merge gate can pass.
+**Top crop framing is visually accepted at target coverage 0.70.** This value was lowered from 0.80 after the initial Top runtime crop clipped part of the cutter; the user reviewed the same-image comparison and approved the 0.70 framing. The application now treats Top framing as accepted in its preview metadata. Isometric remains provisional at target coverage 0.65 and still requires representative crop review before the merge gate can pass.
 
 ## Top/Isometric detection fusion
 
@@ -66,8 +66,7 @@ existing no-crop behavior. Every selected WBF cluster in the successful
 images combined multiple candidates (3–20 source boxes). The user visually
 reviewed the WBF outputs and confirmed that they looked better than both
 baseline and NMS. This supports integrating the validated WBF approach into
-the StandAlone Top/Isometric crop path; it does not change the provisional
-target-coverage settings or authorize BitHub migration.
+the StandAlone Top/Isometric crop path; it does not change the provisional Isometric target-coverage setting or authorize BitHub migration.
 
 ## Existing model baseline
 
@@ -104,9 +103,8 @@ Apply the selected region to the normalized working image based on the resolved 
 - Top and Isometric outputs are independently normalized square presentation crops at a consistent fixed output resolution.
 - Preserve source aspect ratio; never stretch the cutter.
 - Pad beyond source-image edges when the square crop extends outside the image.
-- Top framing must retain the entire visible cutter with consistent surrounding margin.
-- Isometric framing must keep the diamond table prominent while retaining carbide context.
-- The final Top and Isometric target-coverage / margin factors are intentionally unresolved until representative model predictions are run through a preview implementation and reviewed. Do not silently choose production crop margins.
+- Top framing is accepted at target coverage 0.70; it must retain the entire visible cutter with consistent surrounding margin.
+- Isometric framing must keep the diamond table prominent while retaining carbide context; its target-coverage factor remains provisional at 0.65 pending visual review.
 
 ## Implementation sequence
 
@@ -114,7 +112,7 @@ Apply the selected region to the normalized working image based on the resolved 
 2. Add per-view inference adapters and load only the checkpoint associated with the resolved view.
 3. Add view-aware detection-region selection using the six settings above.
 4. Map predicted boxes from detection-region coordinates back to normalized working-image coordinates.
-5. Add a previewable crop-geometry layer for Top and Isometric, keeping final target-coverage factors configurable and visible.
+5. Add a previewable crop-geometry layer for Top and Isometric, keeping target-coverage factors configurable and visible; Top is accepted at 0.70 and Isometric remains provisional at 0.65.
 6. Preserve the Face code path and its defaults.
 7. Add unit tests for angle mapping, invalid/missing identifiers, stable group ordering, orientation settings, coordinate translation, square crop geometry, image-edge padding, and Face-path regression.
 8. Run local application tests and review representative Top and Isometric output crops before finalizing crop factors.
@@ -126,6 +124,7 @@ Do not merge this branch into `main`, and do not begin BitHub migration, until:
 - Production angle mapping and Isometric → Top → Face group order are verified.
 - Top and Isometric inference both work in the app.
 - All six view/orientation detection-region combinations are verified.
-- Final Top and Isometric crop framing is visually accepted.
+- Top crop framing is visually accepted at 0.70.
+- Isometric crop framing is visually accepted.
 - Face behavior remains unchanged.
 - Tests pass and the cropper baseline is documented.
