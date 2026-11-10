@@ -125,6 +125,6 @@ Do not merge this branch into `main`, and do not begin BitHub migration, until:
 - Top and Isometric inference both work in the app.
 - All six view/orientation detection-region combinations are verified.
 - Top crop framing is visually accepted at 0.70.
-- Isometric crop framing is visually accepted after reviewing the 0.80-coverage, 55%-vertical-position test output.
+- Isometric crop framing is visually accepted after reviewing the 0.80-coverage, 65%-vertical-position test output.
 - Face behavior remains unchanged.
 - Tests pass and the cropper baseline is documented.
