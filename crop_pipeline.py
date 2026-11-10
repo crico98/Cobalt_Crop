@@ -9,7 +9,7 @@ from typing import Iterable, Mapping
 from PIL import Image
 
 
-# Angle IDs are part of the source filename, not the image's aspect ratio.
+# Explicit angle IDs are supplied by the JSON manifest, not inferred from image content.
 ANGLE_VIEWS = {
     "0": ("isometric", 0),
     "1": ("top", 1),
