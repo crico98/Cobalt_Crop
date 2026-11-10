@@ -35,7 +35,7 @@ The following pipeline components are implemented:
 
 The Top and Isometric model directories are excluded by `.gitignore`; their locally trained `best.pt` files must be present on the workstation for inference. The application reports missing checkpoints and does not substitute another view's model.
 
-**Crop framing is not yet production-approved.** Current preview defaults are Top target coverage 0.80 and Isometric target coverage 0.65. These are deliberately marked provisional in the UI and code. They must be visually reviewed and adjusted against representative real crops before the merge gate can pass.
+**Crop framing is not yet production-approved.** Current preview defaults are Top target coverage 0.70 and Isometric target coverage 0.65. The Top value was lowered from 0.80 to 0.70 for a direct same-image framing comparison after the initial Top runtime crop clipped part of the cutter. This is a calibration experiment only; it remains provisional until representative Top crops are visually reviewed and accepted. These are deliberately marked provisional in the UI and code. They must be visually reviewed and adjusted against representative real crops before the merge gate can pass.
 
 ## Top/Isometric detection fusion
 
