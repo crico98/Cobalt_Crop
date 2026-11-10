@@ -35,7 +35,7 @@ The following pipeline components are implemented:
 
 The Top and Isometric model directories are excluded by `.gitignore`; their locally trained `best.pt` files must be present on the workstation for inference. The application reports missing checkpoints and does not substitute another view's model.
 
-**Top crop framing is visually accepted at target coverage 0.70.** This value was lowered from 0.80 after the initial Top runtime crop clipped part of the cutter; the user reviewed the same-image comparison and approved the 0.70 framing. The application now treats Top framing as accepted in its preview metadata. Isometric is being tested at target coverage 0.80 with its detected diamond-table center positioned at 65% of the output height (slightly below the image midpoint). Its crop geometry explicitly contains the complete detected box; representative runtime output still requires visual review before acceptance.
+**Top crop framing is visually accepted at target coverage 0.70.** This value was lowered from 0.80 after the initial Top runtime crop clipped part of the cutter; the user reviewed the same-image comparison and approved the 0.70 framing. The application now treats Top framing as accepted in its preview metadata. Isometric is being tested at target coverage 0.80 with its detected diamond-table center positioned at 70% of the output height (slightly below the image midpoint). Its crop geometry explicitly contains the complete detected box; representative runtime output still requires visual review before acceptance.
 
 ## Top/Isometric detection fusion
 
@@ -104,7 +104,7 @@ Apply the selected region to the normalized working image based on the resolved 
 - Preserve source aspect ratio; never stretch the cutter.
 - Pad beyond source-image edges when the square crop extends outside the image.
 - Top framing is accepted at target coverage 0.70; it must retain the entire visible cutter with consistent surrounding margin.
-- Isometric framing is currently being tested at target coverage 0.80. The detected diamond-table center is placed at 65% of output height, and the crop geometry must contain the complete detected box. Retain surrounding carbide; final framing remains provisional pending visual review.
+- Isometric framing is currently being tested at target coverage 0.80. The detected diamond-table center is placed at 70% of output height, and the crop geometry must contain the complete detected box. Retain surrounding carbide; final framing remains provisional pending visual review.
 
 ## Implementation sequence
 
@@ -125,6 +125,6 @@ Do not merge this branch into `main`, and do not begin BitHub migration, until:
 - Top and Isometric inference both work in the app.
 - All six view/orientation detection-region combinations are verified.
 - Top crop framing is visually accepted at 0.70.
-- Isometric crop framing is visually accepted after reviewing the 0.80-coverage, 65%-vertical-position test output.
+- Isometric crop framing is visually accepted after reviewing the 0.80-coverage, 70%-vertical-position test output.
 - Face behavior remains unchanged.
 - Tests pass and the cropper baseline is documented.
