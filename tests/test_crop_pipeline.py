@@ -16,6 +16,7 @@ from crop_pipeline import (
     normalize_manifest_records,
     resolve_angle_index,
     square_crop_geometry,
+    isometric_square_crop_geometry,
 )
 
 
@@ -172,6 +173,21 @@ class GeometryTests(unittest.TestCase):
         self.assertEqual(crop.size, (120, 120))
         self.assertEqual(crop.getpixel((0, 60)), (24, 24, 24))
         self.assertEqual(crop.getpixel((60, 60)), (255, 0, 0))
+
+    def test_isometric_crop_keeps_diamond_box_and_places_center_below_midpoint(self):
+        image_size = (1000, 800)
+        box = (400.0, 300.0, 600.0, 500.0)
+        crop = isometric_square_crop_geometry(image_size, box, 0.80)
+        left, top, right, bottom = crop
+        side = right - left
+        self.assertEqual(side, bottom - top)
+        self.assertLessEqual(left, box[0])
+        self.assertLessEqual(top, box[1])
+        self.assertGreaterEqual(right, box[2])
+        self.assertGreaterEqual(bottom, box[3])
+        face_center_y = ((box[1] + box[3]) / 2.0 - top) / side
+        self.assertGreaterEqual(face_center_y, 0.50)
+        self.assertAlmostEqual(face_center_y, 0.55, delta=0.01)
 
     def test_invalid_crop_boxes_rejected(self):
         with self.assertRaises(ValueError):
