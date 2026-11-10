@@ -14,7 +14,7 @@ from werkzeug.utils import secure_filename
 
 from crop_pipeline import (
     OUTPUT_SIZE,
-    PROVISIONAL_CROP_COVERAGE,
+    CROP_TARGET_COVERAGE,
     VIEW_LABELS,
     BOX_FUSION_CANDIDATE_IOU,
     choose_fused_detection,
@@ -402,7 +402,7 @@ def process_object_item(batch_id: str, item: dict, image: Image.Image) -> None:
         "fusion_applied": bool(selected.get("fusion_applied", False)),
         "fusion_source_count": int(selected.get("fusion_source_count", 1)),
         "fusion_members": list(selected.get("fusion_members", ())),
-        "provisional": True,
+        "provisional": view == "isometric",
     }
 
 
