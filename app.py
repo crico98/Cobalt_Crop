@@ -386,7 +386,7 @@ def process_object_item(batch_id: str, item: dict, image: Image.Image) -> None:
         return
 
     full_box = map_box_to_full_image(selected["box"], offset)
-    coverage = PROVISIONAL_CROP_COVERAGE[view]
+    coverage = CROP_TARGET_COVERAGE[view]
     crop_box = square_crop_geometry(image.size, full_box, coverage)
     crop = crop_square(image, crop_box, OUTPUT_SIZE)
     save_rgb(crop, item_dir(batch_id, item["id"]) / "crop.png")
