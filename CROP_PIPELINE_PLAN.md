@@ -30,7 +30,7 @@ The following pipeline components are implemented:
 - Six view/orientation detection-region settings, centered region extraction, and translation of detector boxes back to full working-image coordinates.
 - Square Top/Isometric output geometry, fixed 1200-pixel output, aspect-ratio preservation, and edge padding.
 - Top/Isometric permissive candidate inference and confidence-weighted box fusion, with unchanged single-member clusters and existing no-detection behavior.
-- Batch preview labels the view, angle, model input region, detector confidence, and provisional crop framing.
+- Batch preview labels the view, angle, model input region, detector confidence, and crop framing.
 - Unit tests cover routing, stable ordering, invalid inputs, all six region settings, coordinate mapping, square crop geometry, detection selection, and WBF fusion behavior.
 
 The Top and Isometric model directories are excluded by `.gitignore`; their locally trained `best.pt` files must be present on the workstation for inference. The application reports missing checkpoints and does not substitute another view's model.
@@ -66,7 +66,7 @@ existing no-crop behavior. Every selected WBF cluster in the successful
 images combined multiple candidates (3–20 source boxes). The user visually
 reviewed the WBF outputs and confirmed that they looked better than both
 baseline and NMS. This supports integrating the validated WBF approach into
-the StandAlone Top/Isometric crop path; it does not change the provisional Isometric target-coverage setting or authorize BitHub migration.
+the StandAlone Top/Isometric crop path; it does not change the accepted Isometric target-coverage setting or authorize BitHub migration.
 
 ## Existing model baseline
 
