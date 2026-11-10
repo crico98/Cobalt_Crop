@@ -87,6 +87,10 @@ The app reports whether each checkpoint is available. A missing Top or Isometric
 
 Do not commit model weights, training datasets, proprietary source photos, or annotation manifests unless the repository owner has explicitly approved their inclusion.
 
+### Optional Top / Isometric annotation editor
+
+The browser annotation editor at /annotate is separate from the crop upload workflow. It expects local source images under dataset/train/images and the local annotation manifest at dataset/top_isometric_annotations.json. These proprietary inputs are not included in the repository. The editor can be used only after the owner has supplied the approved local dataset and manifest. The editor and training utilities are not required to run inference on an uploaded photo batch.
+
 ## 6. Start the application
 
 ~~~powershell
