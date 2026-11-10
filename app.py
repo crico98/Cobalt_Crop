@@ -22,6 +22,7 @@ from crop_pipeline import (
     crop_square,
     detection_region,
     map_box_to_full_image,
+    isometric_square_crop_geometry,
     normalize_manifest_records,
     square_crop_geometry,
 )
@@ -387,7 +388,10 @@ def process_object_item(batch_id: str, item: dict, image: Image.Image) -> None:
 
     full_box = map_box_to_full_image(selected["box"], offset)
     coverage = CROP_TARGET_COVERAGE[view]
-    crop_box = square_crop_geometry(image.size, full_box, coverage)
+    if view == "isometric":
+        crop_box = isometric_square_crop_geometry(image.size, full_box, coverage)
+    else:
+        crop_box = square_crop_geometry(image.size, full_box, coverage)
     crop = crop_square(image, crop_box, OUTPUT_SIZE)
     save_rgb(crop, item_dir(batch_id, item["id"]) / "crop.png")
     x1, y1, x2, y2 = full_box
