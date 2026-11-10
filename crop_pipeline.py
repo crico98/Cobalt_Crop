@@ -33,7 +33,7 @@ DETECTION_REGIONS = {
 # Isometric remains provisional pending representative crop review.
 CROP_TARGET_COVERAGE = {
     "top": 0.70,
-    "isometric": 0.65,
+    "isometric": 0.80,
 }
 OUTPUT_SIZE = 1200
 
@@ -140,6 +140,38 @@ def square_crop_geometry(
     half = max(1, int(math.ceil(max(x2 - x1, y2 - y1) / (2.0 * target_coverage))))
     left, top = int(round(cx)) - half, int(round(cy)) - half
     side = 2 * half
+    return left, top, left + side, top + side
+
+
+def isometric_square_crop_geometry(
+    image_size: tuple[int, int],
+    box: tuple[float, float, float, float],
+    target_coverage: float,
+    target_y: float = 0.55,
+) -> tuple[int, int, int, int]:
+    """Zoom the Isometric target while placing its center slightly below crop center.
+
+    The complete detected diamond-table box is kept inside the square crop.
+    target_y=0.55 places the box center 55% down the output, below (not above)
+    the image midpoint.
+    """
+    if not 0.0 < target_coverage <= 1.0:
+        raise ValueError("target_coverage must be greater than 0 and at most 1.")
+    if not 0.0 < target_y < 1.0:
+        raise ValueError("target_y must be greater than 0 and less than 1.")
+    x1, y1, x2, y2 = map(float, box)
+    if not all(math.isfinite(v) for v in (x1, y1, x2, y2)):
+        raise ValueError("Detection box coordinates must be finite.")
+    if x2 <= x1 or y2 <= y1:
+        raise ValueError("Detection box must have positive width and height.")
+    width, height = x2 - x1, y2 - y1
+    cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
+    side = int(math.ceil(max(
+        max(width, height) / target_coverage,
+        height / (2.0 * min(target_y, 1.0 - target_y)),
+    )))
+    left = int(math.floor(cx - side / 2.0))
+    top = int(math.floor(cy - target_y * side))
     return left, top, left + side, top + side
 
 
