@@ -29,9 +29,9 @@ DETECTION_REGIONS = {
     ("face", "landscape"): (55, 80),
     ("face", "portrait"): (60, 45),
 }
-# Provisional preview framing only. These values are intentionally not a
-# production acceptance decision; review representative crops before locking.
-PROVISIONAL_CROP_COVERAGE = {
+# Per-view square-crop target coverage. Top framing has been visually accepted;
+# Isometric remains provisional pending representative crop review.
+CROP_TARGET_COVERAGE = {
     "top": 0.70,
     "isometric": 0.65,
 }
