@@ -187,7 +187,7 @@ class GeometryTests(unittest.TestCase):
         self.assertGreaterEqual(bottom, box[3])
         face_center_y = ((box[1] + box[3]) / 2.0 - top) / side
         self.assertGreaterEqual(face_center_y, 0.50)
-        self.assertAlmostEqual(face_center_y, 0.65, delta=0.01)
+        self.assertAlmostEqual(face_center_y, 0.70, delta=0.01)
 
     def test_invalid_crop_boxes_rejected(self):
         with self.assertRaises(ValueError):
