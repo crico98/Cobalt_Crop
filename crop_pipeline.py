@@ -147,13 +147,12 @@ def isometric_square_crop_geometry(
     image_size: tuple[int, int],
     box: tuple[float, float, float, float],
     target_coverage: float,
-    target_y: float = 0.55,
+    target_y: float = 0.65,
 ) -> tuple[int, int, int, int]:
     """Zoom the Isometric target while placing its center slightly below crop center.
 
     The complete detected diamond-table box is kept inside the square crop.
-    target_y=0.55 places the box center 55% down the output, below (not above)
-    the image midpoint.
+    target_y=0.65 places the box center 65% down the output, below the image midpoint.
     """
     if not 0.0 < target_coverage <= 1.0:
         raise ValueError("target_coverage must be greater than 0 and at most 1.")
