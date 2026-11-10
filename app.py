@@ -406,7 +406,7 @@ def process_object_item(batch_id: str, item: dict, image: Image.Image) -> None:
         "fusion_applied": bool(selected.get("fusion_applied", False)),
         "fusion_source_count": int(selected.get("fusion_source_count", 1)),
         "fusion_members": list(selected.get("fusion_members", ())),
-        "provisional": view == "isometric",
+        "provisional": False,
     }
 
 
