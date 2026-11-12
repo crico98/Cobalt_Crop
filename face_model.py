@@ -1,8 +1,16 @@
+"""Face V2 segmentation inference and cutter-face crop geometry."""
+
 from pathlib import Path
 
 import cv2
 import numpy as np
 from PIL import Image
+
+from face_geometry import (
+    fit_face_geometry,
+    fit_face_geometry_fallback,
+    reconstruct_round_face_from_fragment,
+)
 
 
 ROOT = Path(__file__).parent
@@ -20,15 +28,6 @@ FACE_FRACTION = 0.875
 MIN_CONF = 0.1
 WARN_CONF = 0.80
 MAX_AXIS_RATIO = 1.15
-
-# Geometry functions remain imported here for compatibility with existing
-# modules that may import them from face_model.
-from face_geometry import (
-    fit_face_geometry,
-    fit_face_geometry_fallback,
-    reconstruct_round_face_from_fragment,
-)
-
 
 class FaceFinder:
     def __init__(
