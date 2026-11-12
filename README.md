@@ -85,7 +85,7 @@ The manifest must include every uploaded image exactly once. The app rejects mis
 
 - This is a local, single-user prototype. Batch/job metadata is held in memory; restarting Flask clears active batch metadata.
 - Uploaded working files and generated crops are stored under work/, which is excluded from Git. They are not automatically removed when a batch finishes.
-- Top and Isometric checkpoints are local model artifacts and are excluded from Git. They must be supplied separately to a collaborator who needs to run those views.
+- All three inference checkpoints are shared with authorized collaborators. The Face checkpoint is committed directly; Top and Isometric checkpoints are stored with Git LFS. Install Git LFS and run `git lfs pull` if model files are missing or appear as pointer text.
 - The Face V2 checkpoint is currently present in the repository under models/face_combined_v2_finetune/weights/best.pt. Anyone granted repository access can access committed files, including this checkpoint.
 - Proprietary source photos, annotation manifests, and generated training datasets should remain local/untracked unless there is explicit approval to share them.
 - Automated unit tests do not replace inference tests with the actual trained checkpoints or visual review of full-batch results.
