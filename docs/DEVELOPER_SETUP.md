@@ -68,24 +68,30 @@ python -c "import torch; print('torch:', torch.__version__); print('CUDA availab
 python -m pip install -r requirements.txt
 ~~~
 
-## 5. Supply model checkpoints
+## 5. Model checkpoints
 
-The Face V2 checkpoint is present in the repository at:
+All three inference checkpoints are part of the shared project. The Face V2 checkpoint is already committed as a regular Git file. The Top and Isometric checkpoints are tracked with Git LFS:
 
 ~~~text
 models/face_combined_v2_finetune/weights/best.pt
-~~~
-
-Top and Isometric checkpoints are not stored in Git. Obtain approved copies and place them at:
-
-~~~text
 models/top_view/weights/best.pt
 models/isometric_view/weights/best.pt
 ~~~
 
-The app reports whether each checkpoint is available. A missing Top or Isometric checkpoint prevents inference for that view; it does not fall back to another model.
+Install Git LFS before cloning or pulling the model files:
 
-Do not commit model weights, training datasets, proprietary source photos, or annotation manifests unless the repository owner has explicitly approved their inclusion.
+~~~powershell
+git lfs install
+git lfs pull
+~~~
+
+A normal Git LFS-enabled clone downloads the model contents automatically. If a checkpoint appears as a small text pointer instead of a binary file, run `git lfs pull` from the repository root.
+
+The Top and Isometric checkpoint files must be added from the approved local copies at the exact paths above. Do not rename them. The application checks the expected class name for each detector when loading it.
+
+The repository owner has approved sharing these three inference checkpoints with authorized repository collaborators. This approval does not extend to proprietary source photos, annotation manifests, or generated training datasets; those remain local/untracked unless separately approved.
+
+Before distributing the branch, confirm that the GitHub repository has sufficient Git LFS storage and bandwidth for both model files.
 
 ### Optional Top / Isometric annotation editor
 
