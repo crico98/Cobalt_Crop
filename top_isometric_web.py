@@ -131,6 +131,8 @@ def image_file():
 def save_annotation():
     payload = request.get_json(silent=True) or {}
     key = payload.get("key")
+    if not isinstance(key, str) or not key:
+        abort(400, "An image key is required.")
     _image_path(key)
     boxes = _validated_boxes(payload.get("boxes", []))
     view = payload.get("view", "")
