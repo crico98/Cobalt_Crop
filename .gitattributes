@@ -1,0 +1,2 @@
+# Store trained PyTorch checkpoints in Git LFS rather than ordinary Git blobs.
+*.pt filter=lfs diff=lfs merge=lfs -text
