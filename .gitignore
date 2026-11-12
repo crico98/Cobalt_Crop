@@ -9,7 +9,5 @@ dataset/top_isometric_annotations.json
 dataset/training_rotation_manifest.json
 training_presentation/
 training_presentation_exif_normalized/
-models/top_view/
-models/isometric_view/
 yolo11n.pt
 .vscode/
