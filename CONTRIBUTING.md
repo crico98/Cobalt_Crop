@@ -34,7 +34,8 @@ Do not change these without explicit review and approval:
 - Face V2 model selection and established crop behavior.
 - Accepted Top and Isometric crop geometry.
 - The original annotation manifest and baseline YOLO export.
-- Trained model checkpoints and source training images.
+- Trained model checkpoints: preserve the approved weights and use Git LFS for `.pt` files. Do not replace or retrain them without explicit review.
+- Source training images.
 - The boundary between the StandAlone validation harness and future BitHub integration.
 
 Do not silently add filename-based view inference or infer a view from EXIF, image orientation, image pixels, or upload order.
@@ -46,7 +47,7 @@ The following are local or separately distributed assets and should not be commi
 - Proprietary cutter source photos.
 - Annotation manifests.
 - Generated training datasets and derived presentation datasets.
-- Top and Isometric model checkpoints.
+- Proprietary model-training source images and datasets (the approved inference checkpoints are shared through Git/Git LFS).
 - Batch uploads and generated crop outputs under work/.
 
 The Face V2 checkpoint is currently committed in this repository. Repository collaborators can access committed files, including model binaries. Confirm that a person is authorized to receive repository contents before inviting them.
