@@ -1,6 +1,7 @@
 """Face V2 segmentation inference and cutter-face crop geometry."""
 
 from pathlib import Path
+from typing import Any, cast
 
 import cv2
 import numpy as np
@@ -64,12 +65,20 @@ class FaceFinder:
         image_height, image_width = image_bgr.shape[:2]
 
         model = self._load_model()
-        result = model.predict(
+        predictions = model.predict(
             image_bgr,
             imgsz=self.imgsz,
             conf=MIN_CONF,
             verbose=False,
-        )[0]
+        )
+        first_prediction = next(iter(predictions), None)
+        if first_prediction is None:
+            return None
+
+        # Ultralytics' predict() annotations expose an iterator union that
+        # includes Tensor, although this YOLO segmentation call yields Results.
+        # Narrow that third-party typing boundary once before using Results.
+        result = cast(Any, first_prediction)
 
         if result.masks is None or len(result.masks.xy) == 0:
             return None
@@ -211,6 +220,9 @@ class FaceFinder:
         if geometry is None:
             return None
 
+        # Geometry fitters return numeric geometry fields; this result is
+        # extended below with arrays, flags, and descriptive strings.
+        geometry = cast(dict[str, Any], geometry)
         geometry["conf"] = float(best["conf"])
         geometry["area"] = float(best["area"])
         geometry["center_distance"] = float(best["center_distance"])
