@@ -38,11 +38,13 @@ Use the active feature branch when reviewing the current pipeline. The default b
 
 ## Model availability and sharing
 
-- Face V2 checkpoint is currently committed at models/face_combined_v2_finetune/weights/best.pt.
-- Top checkpoint is expected at models/top_view/weights/best.pt and is excluded from Git.
-- Isometric checkpoint is expected at models/isometric_view/weights/best.pt and is excluded from Git.
-- A collaborator can clone the code and receive committed files after being granted repository access, but will need approved separate copies of the Top and Isometric checkpoints to run those views.
-- Proprietary training photos, annotation manifests, and generated datasets are intended to remain local/untracked.
+- Face V2 checkpoint is committed at models/face_combined_v2_finetune/weights/best.pt.
+- Top checkpoint is approved for sharing and is configured for Git LFS at models/top_view/weights/best.pt.
+- Isometric checkpoint is approved for sharing and is configured for Git LFS at models/isometric_view/weights/best.pt.
+- The .gitattributes rule tracks PyTorch .pt files with Git LFS; .gitignore no longer excludes the Top or Isometric model directories.
+- The two local Top and Isometric checkpoint files still need to be added and pushed from the repository owner's workstation. Until that upload is verified on GitHub, the branch does not yet contain all three model binaries.
+- Authorized collaborators need Git LFS installed to retrieve the two large checkpoints.
+- Proprietary training photos, annotation manifests, and generated datasets remain local/untracked.
 
 ## Known limitations
 
