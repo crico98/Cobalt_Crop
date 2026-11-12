@@ -274,10 +274,16 @@ def _confidence_weighted_box(members: list[dict]) -> tuple[float, float, float, 
     if total_weight <= 0:
         weights = [1.0] * len(members)
         total_weight = float(len(members))
-    return tuple(
+    coordinates = [
         sum(float(item["box"][axis]) * weight for item, weight in zip(members, weights))
         / total_weight
         for axis in range(4)
+    ]
+    return (
+        coordinates[0],
+        coordinates[1],
+        coordinates[2],
+        coordinates[3],
     )
 
 
