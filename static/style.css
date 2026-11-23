@@ -18,3 +18,84 @@ button:hover,.download:hover{filter:brightness(1.08)}.secondary{background:#e8ed
 .empty{min-height:280px;display:grid;place-items:center;text-align:center;color:#758396;background:#f7f9fb;border:1px dashed #cbd4df;border-radius:8px;padding:20px}.empty.small{min-height:180px}
 dl{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:14px}dt{color:#687789}dd{margin:0;font-weight:600}.download{margin:8px 0 12px;background:#126b55}
 @media(max-width:850px){.shell,.shell.wide{margin:0;padding:20px;border-radius:0}.item-columns{grid-template-columns:1fr}.item-heading{display:block}.status{display:inline-block;margin-top:8px}.actions{display:grid}}
+
+/* Live visualization of the center region passed to the detection model. */
+.image-frame{position:relative;width:100%;overflow:hidden;border-radius:8px;background:#15191e;line-height:0}
+.image-frame .preview{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:8px}
+.crop-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:3px solid #24a36a;background:rgba(36,163,106,.10);box-shadow:0 0 0 9999px rgba(10,15,22,.48);pointer-events:none;display:flex;align-items:flex-start;justify-content:center;min-width:0;min-height:0}
+.crop-controls{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:14px}
+.crop-control{display:grid;gap:7px}
+.crop-control label{font-size:14px;font-weight:600}
+.crop-control output{font-variant-numeric:tabular-nums;color:#176246}
+.crop-control input[type=range]{width:100%;accent-color:#24a36a}
+@media(max-width:650px){.crop-controls{grid-template-columns:1fr;gap:12px}}
+.crop-guide span{display:inline-block;margin:5px;padding:3px 7px;border-radius:4px;background:#24a36a;color:white;font-size:11px;line-height:1.25;font-weight:700;white-space:nowrap}
+.crop-guide.is-full{border-color:#24a36a;background:transparent;box-shadow:none}
+
+.crop-preset{border:1px solid #dce3eb;border-radius:10px;padding:12px 16px;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.crop-preset legend{font-weight:700;padding:0 6px;color:#34475b}
+@media(max-width:650px){.crop-preset{grid-template-columns:1fr}}
+
+/* Browser-based Top / Isometric annotation workspace. */
+.annotation-shell{max-width:1500px}
+.annotation-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0}
+.annotation-nav,.annotation-views{display:flex;align-items:center;gap:8px}
+.annotation-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+.annotation-image-panel,.annotation-card{background:#f7f9fb;border:1px solid #e0e5ec;border-radius:12px;padding:14px;min-width:0}
+.annotation-stage{position:relative;display:flex;justify-content:center;align-items:flex-start;min-height:0;background:#15191e;border-radius:8px;overflow:hidden}
+.annotation-stage .empty{width:100%;min-height:360px;border:0;background:transparent;color:#cbd4df}
+.annotation-image-frame{position:relative;width:100%;max-width:100%;line-height:0}
+.annotation-image-frame img{display:block;width:100%;height:auto;object-fit:contain}
+.annotation-image-frame img[hidden],.annotation-image-frame canvas[hidden]{display:none}
+.annotation-image-frame canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.annotation-filename{overflow-wrap:anywhere;margin:10px 0 4px}
+.annotation-sidebar{display:grid;gap:14px}
+.annotation-card h2{margin-bottom:10px}
+.annotation-card p{margin:8px 0}
+.annotation-actions{display:grid;gap:8px;margin-top:14px}
+.annotation-actions .primary{width:100%}
+.annotation-status{font-weight:700;color:#536273}
+.view-active{background:#126b55!important;color:white!important}
+.annotation-guidance{padding-left:20px;margin:8px 0;color:#536273;font-size:13px}
+.annotation-guidance li{margin:6px 0}
+@media(max-width:900px){.annotation-layout{grid-template-columns:1fr}.annotation-sidebar{grid-template-columns:1fr 1fr}.annotation-sidebar .annotation-card:last-child{grid-column:1/-1}}
+@media(max-width:600px){.annotation-sidebar{grid-template-columns:1fr}.annotation-sidebar .annotation-card:last-child{grid-column:auto}.annotation-toolbar{align-items:stretch}.annotation-nav{justify-content:space-between}.annotation-stage{min-height:240px}.annotation-stage .empty{min-height:240px}}
+
+
+/* Annotation workspace usability fixes: center the photo and constrain it to the viewport. */
+.annotation-stage{
+  min-height: min(72vh, 760px);
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+.annotation-image-frame{
+  width: fit-content;
+  max-width: 100%;
+  max-height: 72vh;
+  margin: auto;
+}
+.annotation-image-frame img{
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 72vh;
+  object-fit: contain;
+}
+.annotation-image-frame canvas{
+  display: block;
+}
+.annotation-stage .empty{
+  min-height: 180px;
+}
+@media(max-width:900px){
+  .annotation-stage{min-height: min(65vh, 620px)}
+  .annotation-image-frame,.annotation-image-frame img{max-height:65vh}
+}
+@media(max-width:600px){
+  .annotation-stage{min-height:240px}
+  .annotation-image-frame,.annotation-image-frame img{max-height:55vh}
+}
+
+/* The .empty display:grid rule must not override the HTML hidden attribute. */
+.annotation-stage .empty[hidden]{display:none}

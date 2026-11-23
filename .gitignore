@@ -2,3 +2,12 @@ work/
 .venv/
 __pycache__/
 *.pyc
+
+# Local, proprietary annotation inputs and generated training outputs.
+dataset/train/images/
+dataset/top_isometric_annotations.json
+dataset/training_rotation_manifest.json
+training_presentation/
+training_presentation_exif_normalized/
+yolo11n.pt
+.vscode/
